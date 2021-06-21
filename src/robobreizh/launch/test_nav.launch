@@ -1,0 +1,7 @@
+<launch>
+  <arg name="localization_type" default="amcl"/>
+
+  <!-- Move base conroller -->
+  <include file="$(find hsrb_rosnav_config)/launch/include/move_base.launch.xml"/>
+
+</launch>

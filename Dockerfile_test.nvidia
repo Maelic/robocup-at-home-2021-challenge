@@ -1,0 +1,62 @@
+FROM devrt/ros-devcontainer-vscode:melodic-desktop
+
+USER root
+
+# Most of the code is originated from:
+# https://gitlab.com/nvidia/container-images/cuda/-/blob/master/dist/10.0/ubuntu18.04-x86_64/base/Dockerfile
+
+RUN apt-get update && apt-get install -y --no-install-recommends apt-utils
+
+RUN curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub | apt-key add - && \
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
+    echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cuda-cudart-10-0 \
+    cuda-compat-10-0 \
+    && ln -s cuda-10.0 /usr/local/cuda && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN echo "/usr/local/nvidia/lib" >> /etc/ld.so.conf.d/nvidia.conf && \
+    echo "/usr/local/nvidia/lib64" >> /etc/ld.so.conf.d/nvidia.conf
+
+ENV NCCL_VERSION 2.6.4
+ENV CUDA_PKG_VERSION 10.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cuda-libraries-$CUDA_PKG_VERSION \
+    cuda-npp-$CUDA_PKG_VERSION \
+    cuda-nvtx-$CUDA_PKG_VERSION \
+    cuda-cublas-10-0=10.0.130-1 \
+    libnccl2=$NCCL_VERSION-1+cuda10.0 \
+    && apt-mark hold libnccl2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# apt from auto upgrading the cublas package. See https://gitlab.com/nvidia/container-images/cuda/-/issues/88
+RUN apt-mark hold cuda-cublas-10-0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cuda-nvml-dev-$CUDA_PKG_VERSION \
+    cuda-command-line-tools-$CUDA_PKG_VERSION \
+    cuda-nvprof-$CUDA_PKG_VERSION \
+    cuda-npp-dev-$CUDA_PKG_VERSION \
+    cuda-libraries-dev-$CUDA_PKG_VERSION \
+    cuda-minimal-build-$CUDA_PKG_VERSION \
+    cuda-cublas-dev-10-0=10.0.130-1 \
+    libnccl-dev=2.6.4-1+cuda10.0 \
+    && apt-mark hold libnccl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# apt from auto upgrading the cublas package. See https://gitlab.com/nvidia/container-images/cuda/-/issues/88
+RUN apt-mark hold cuda-cublas-dev-10-0
+
+ENV LIBRARY_PATH /usr/local/cuda/lib64/stubs
+
+ENV PATH /usr/local/nvidia/bin:/usr/local/cuda-10.0/bin:/usr/local/cuda/bin:${PATH}
+ENV LD_LIBRARY_PATH /usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda-10.0/lib64
+ENV CUDA_HOME /usr/local/cuda-10.0
+
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility
+
+USER developer

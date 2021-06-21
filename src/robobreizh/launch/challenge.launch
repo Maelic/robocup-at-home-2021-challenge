@@ -1,0 +1,5 @@
+<launch>  
+  <node pkg="robobreizh" type="detection_node.py" name="detection" required="true" />
+  <node pkg="robobreizh" type="detect_grasps_server" name="detect_grasps_server" required="true" />
+  <node pkg="robobreizh" type="clean_up.py" name="clean_up" required="true" />
+</launch>

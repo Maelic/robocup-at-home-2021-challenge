@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<items>
+  <item>
+      <name>002_master_chef_can</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>003_cracker_box</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>004_sugar_box</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>005_tomato_soup_can</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>006_mustard_bottle</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>007_tuna_fish_can</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>008_pudding_box</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>009_gelatin_box</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>010_potted_meat_can</name>
+      <category>Food</category>
+  </item>
+  
+  
+  <item>
+      <name>011_banana</name>
+      <category>Food</category>
+  </item>
+  
+  <item>
+      <name>019_pitcher_base</name>
+      <category>Kitchen</category>
+  </item>
+  
+  <item>
+      <name>021_bleach_cleanser</name>
+      <category>Kitchen</category>
+  </item>
+  
+  <item>
+      <name>024_bowl</name>
+      <category>Kitchen</category>
+  </item>
+  
+  <item>
+      <name>025_mug</name>
+      <category>Kitchen</category>
+  </item>
+  
+  <item>
+      <name>035_power_drill</name>
+      <category>Discarded</category>
+  </item>
+  
+  <item>
+      <name>036_wood_block</name>
+      <category>Task</category>
+  </item>
+  
+  <item>
+      <name>037_scissors</name>
+      <category>Discarded</category>
+  </item>
+  
+  <item>
+      <name>040_large_marker</name>
+      <category>Tool</category>
+  </item>
+  
+  <item>
+      <name>051_large_clamp</name>
+      <category>Tool</category>
+  </item>
+  
+  <item>
+      <name>052_extra_large_clamp</name>
+      <category>Tool</category>
+  </item>
+  
+  <item>
+      <name>061_foam_brick</name>
+      <category>Tool</category>
+  </item>
+</items> 
