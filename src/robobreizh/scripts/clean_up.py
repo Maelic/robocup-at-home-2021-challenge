@@ -19,7 +19,6 @@ import moveit_commander
 import tf2_geometry_msgs
 import tf2_ros
 from geometry_msgs.msg import Point32, Point, PoseStamped, Pose, Twist
-from trac_ik_python.trac_ik import IK
 from xml_utils import ObjectBrowserYolo
 from tf import TransformListener
 
