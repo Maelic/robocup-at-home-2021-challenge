@@ -1,6 +1,0 @@
-#Requirements to install for python2.7
-#python2.7 -m pip install trimesh[easy] rtree scipy
-
-trimesh[easy]
-rtree
-scipy

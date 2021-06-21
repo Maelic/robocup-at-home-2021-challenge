@@ -29,7 +29,6 @@ from tf import TransformListener
 import tf2_ros
 import tf2_geometry_msgs
 import threading
-from trac_ik_python.trac_ik import IK
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 

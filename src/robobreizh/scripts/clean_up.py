@@ -136,14 +136,14 @@ HAND_POSE_TRAY_B.orientation.z = 0.660406564155
 HAND_POSE_TRAY_B.orientation.w = 0.33911857834
 
 HAND_POSE_TRAY_A = Pose()
-HAND_POSE_TRAY_A.position.x = 1.77153843117
-HAND_POSE_TRAY_A.position.y = 0.15362261753
-HAND_POSE_TRAY_A.position.z = 0.589553820905
+HAND_POSE_TRAY_A.position.x = 1.369695501
+HAND_POSE_TRAY_A.position.y = -0.85318024349
+HAND_POSE_TRAY_A.position.z = 0.604044405094
 
-HAND_POSE_TRAY_A.orientation.x = 0.550150405563
-HAND_POSE_TRAY_A.orientation.y = -0.391995190074
-HAND_POSE_TRAY_A.orientation.z = 0.61801347907
-HAND_POSE_TRAY_A.orientation.w = 0.402161213824
+HAND_POSE_TRAY_A.orientation.x = 0.581120937063
+HAND_POSE_TRAY_A.orientation.y = -0.476202393196
+HAND_POSE_TRAY_A.orientation.z = 0.524295252555
+HAND_POSE_TRAY_A.orientation.w = 0.400804472741
 
 TRAY_A = [1.5,  0.0, -90]
 TRAY_B = [1.85, 0.0, -90]
@@ -371,7 +371,7 @@ def main():
 	rospy.init_node("Manager")
 	
 	# For testing pupropse, go to the initial position
-	#repositioning()
+	repositioning()
 
 	POSE_TABLE1 = [-0.1, 1.3, 90]
 	POSE_TABLE2 = [1.25, 1.2, 90]
