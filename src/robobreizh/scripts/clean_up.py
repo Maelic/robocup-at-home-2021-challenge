@@ -23,7 +23,6 @@ from xml_utils import ObjectBrowserYolo
 from tf import TransformListener
 import actionlib
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from ipywidgets import interact
 
 #Deposits information
 class Deposit():
@@ -119,6 +118,7 @@ rospy.init_node("Manager")
 
 grasp_node = Grasping()
 listener = tf.TransformListener()
+yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
 
 def get_deposit(category):
 	dic_depo = {'Food': TRAY_A, 'Kitchen': CONTAINER_A, 'Tool': BIN_A, 'Shape': BIN_B, 'Task': BIN_A, 'Discarded': BIN_B}
@@ -137,7 +137,7 @@ def detect_object():
 	msg = Int64(4)
 	resp = ""
 	start = time.time()
-	end = start + 4
+	end = start + 2
 	try:
 		resp = detect_service(msg)
 	except rospy.ServiceException as exc:
@@ -227,13 +227,19 @@ def compute_clostest_object(detected_obj):
 
 	return indice
 
-def f(lower = 0, upper = 255):
-	yellow_region = (h_image > lower) & (h_image < upper)
-	plt.imshow(yellow_region)
+def calcul_distance(detected_obj):
+	obj_pose = grasp_node.transform_frame(detected_obj.object_posesXYZ[0], "map", "head_rgbd_sensor_rgb_frame").pose
+	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+	x = obj_pose.position.x - trans[0]
+	y = obj_pose.position.y - trans[1]
+	v = [x,y]
+	dist_actual = np.sqrt(np.square(x) + np.square(y))
+	print(dist_actual)
+	return dist_actual
 
-def move_object_on_the_way():
+def move_object_on_the_way(stop):
 	move_head_tilt(-1.0)
-	bounding_box = [170, 380, 470, 480]
+	bounding_box = [170, 300, 470, 480]
 	# Look for objects
 	resp = ""
 	boundingbox = BoundingBoxCoord()
@@ -242,65 +248,131 @@ def move_object_on_the_way():
 	while True:
 		(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
 		print(trans)
-		if trans[1] >= 1.1:
+		if trans[1] >= stop:
 			return True
-		
-		# Get grasping pose
-		rospy.loginfo("Waiting for Grasping service...")
-		start = time.time()
-		rospy.wait_for_service('/detect_grasps_server/detect_grasps')
-		grasp_service = rospy.ServiceProxy('/detect_grasps_server/detect_grasps', detect_grasps)
 
-		pc = rospy.wait_for_message('/hsrb/head_rgbd_sensor/depth_registered/rectified_points', PointCloud2)
+		rospy.loginfo("Waiting for Object Detection service...")
+		resp_obj = detect_object()
+		rospy.sleep(1)
+		if not resp_obj:
+			# Get grasping pose
+			rospy.loginfo("Waiting for Grasping service...")
+			start = time.time()
+			rospy.wait_for_service('/detect_grasps_server/detect_grasps')
+			grasp_service = rospy.ServiceProxy('/detect_grasps_server/detect_grasps', detect_grasps)
 
-		msg = GraspServerRequest()
-		msg.bounding_box = boundingbox
-		msg.global_cloud = pc
+			pc = rospy.wait_for_message('/hsrb/head_rgbd_sensor/depth_registered/rectified_points', PointCloud2)
 
-		try:
-			resp = grasp_service(msg)
-		except rospy.ServiceException as exc:
-			print("Service did not process request: " + str(exc))
+			msg = GraspServerRequest()
+			msg.bounding_box = boundingbox
+			msg.global_cloud = pc
 
-		# Grasp to the bin
+			try:
+				resp = grasp_service(msg)
+			except rospy.ServiceException as exc:
+				print("Service did not process request: " + str(exc))
 
-		if resp != "":
-			detected_grasp = GraspConfigList()
-			detected_grasp = resp.grasp_configs.grasps
-			best_grasp = GraspConfig()
-			best_grasp = detected_grasp[0]
+			# Grasp to the bin
 
-			if best_grasp.pre_pose.position.z >= 0.7:
-				print("Grasp pose is too far on the table")
-				return False
+			if resp != "":
+				detected_grasp = GraspConfigList()
+				detected_grasp = resp.grasp_configs.grasps
+				best_grasp = GraspConfig()
+				best_grasp = detected_grasp[0]
+
+				if best_grasp.pre_pose.position.z >= 0.7:
+					print("Grasp pose is too far on the table")
+					#return False
+				else:
+					if grasp_node.grasp_ground(best_grasp):
+						move_hand(0)
+						print("Grasp successful!")
+					else:
+						print("Grasp failed!")
+				move_head_tilt(0.0)
+
+				# Move back arm for easy navigation
+				move_arm_neutral()
+				#go_to_place([0,0,0])
+				go_to_place(BIN_B.coord)
+				rospy.sleep(1.)
+
+				place_obj(BIN_B.hand)
+				rospy.sleep(1.)
+
+				move_hand(1)
+				rospy.sleep(1.)
+				
+				move_arm_init()
+				move_hand(0)
+				#go_to_place([0,0,0])
+				go_to_place([1.2, 0.6, 90])
 			else:
+				rospy.loginfo("No objects found, moving...")
+				move_base_vel(0.15,0.0,0.0)
+				rospy.sleep(2.)
+		else:
+
+			rospy.loginfo("Objects found!")
+
+			detected_obj = DetectedObj()
+			detected_obj = resp_obj.detected_objects
+
+			if calcul_distance(detected_obj) < 0.7:
+
+				indice = compute_clostest_object(detected_obj)
+				rospy.sleep(1.)
+				# Get grasping pose
+				rospy.loginfo("Waiting for Grasping service...")
+				start = time.time()
+				rospy.wait_for_service('/detect_grasps_server/detect_grasps')
+				grasp_service = rospy.ServiceProxy('/detect_grasps_server/detect_grasps', detect_grasps)
+
+				msg = GraspServerRequest()
+				msg.bounding_box = detected_obj.objects_bb[indice]
+				msg.global_cloud = detected_obj.cloud
+
+				try:
+					resp2 = grasp_service(msg)
+				except rospy.ServiceException as exc:
+					print("Service did not process request: " + str(exc))
+					return False
+
+				print("Time to find a good grasp: {}".format(time.time() - start))
+
+				detected_grasp = GraspConfigList()
+				detected_grasp = resp2.grasp_configs.grasps
+				best_grasp = GraspConfig()
+				best_grasp = detected_grasp[0]
+
 				if grasp_node.grasp_ground(best_grasp):
 					move_hand(0)
 					print("Grasp successful!")
 				else:
 					print("Grasp failed!")
 					return False
-			move_head_tilt(0.0)
+				move_head_tilt(0.0)
 
-			# Move back arm for easy navigation
-			move_arm_neutral()
-			go_to_place([0,0,0])
-			go_to_place(BIN_B.coord)
+				category = yolo_object_browser.getCategory(detected_obj.object_names[indice].data)
+				print("Object category: {}".format(category))
 
-			place_obj(BIN_B.hand)
+				depo = get_deposit(category)
 
-			move_hand(1)
-			rospy.sleep(0.5)
-			
-			move_arm_init()
-			move_hand(0)
-			go_to_place([0,0,0])
-			go_to_place(trans)
+				go_to_place(depo.coord)
 
-		rospy.loginfo("No objects found, moving...")
-		move_base_vel(0.1,0.0,0.0)
-		rospy.sleep(2)
+				place_obj(depo.hand)
 
+				move_hand(1)
+				rospy.sleep(0.5)
+				
+				move_arm_init()
+				move_hand(0)
+				#go_to_place([0,0,0])
+				go_to_place([1.2, 0.6, 90])
+			else:
+				rospy.loginfo("No objects found, moving...")
+				move_base_vel(0.15,0.0,0.0)
+				rospy.sleep(2.)
 
 def process(State):		
 	yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
@@ -459,11 +531,10 @@ def return_init_state():
 
 
 def main():
-	yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
 	rospy.init_node("Manager")
 	# For testing pupropse, go to the initial position
 
-	#repositioning()
+	repositioning()
 	move_arm_init()
 	#go_to_place(CONTAINER_A.coord)
 	#go_to_place(TRAY_A.coord)
@@ -473,17 +544,17 @@ def main():
 	POSE_GROUND2 = [1.2, 0.8, 90]
 	START = [-0.1, 0.6, 90]
 
-	State = "Table1"
+	State = "Ground"
 	#return_init_state()
 	while True:
 
 		if State == "Table1":
 			move_arm_init()
 			go_to_place(START)
-			move_object_on_the_way()
+			move_object_on_the_way(1.1)
 			#Step 1: Clean up Objects Table 1
 			move_arm_init()
-			go_to_place(POSE_TABLE1)
+			#go_to_place(POSE_TABLE1)
 			move_head_tilt(-0.7)
 
 			# Move the arm to the table height
@@ -509,7 +580,7 @@ def main():
 			#Step 2: Clean up Objects Ground Area
 			move_arm_init()
 			go_to_place(POSE_GROUND1)
-
+			move_object_on_the_way(1.1)
 			move_head_tilt(-0.8)
 			time.sleep(2)
 			go_to_place(POSE_GROUND2)

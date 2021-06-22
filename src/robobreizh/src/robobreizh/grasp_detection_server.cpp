@@ -247,14 +247,11 @@ bool GraspDetectionServer::detectGrasps(robobreizh::detect_grasps::Request& req,
   pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
 
   PointCloudRGB::Ptr cloud_f (new PointCloudRGB);
-  Eigen::Vector3f axis = Eigen::Vector3f(0.0,0.0,1.0);
 
   seg.setOptimizeCoefficients (true);
   seg.setModelType (pcl::SACMODEL_PLANE);
   seg.setMethodType (pcl::SAC_RANSAC);
-  seg.setMaxIterations (300);
-  seg.setAxis(axis);
-  seg.setEpsAngle(10.0f * (M_PI/180.0f));
+  seg.setMaxIterations (100);
   seg.setDistanceThreshold (0.01);
   
   // Segment the largest planar component from the remaining cloud
