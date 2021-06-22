@@ -81,14 +81,14 @@ HAND_POSE_TRAY_B.orientation.z = 0.660406564155
 HAND_POSE_TRAY_B.orientation.w = 0.33911857834
 
 HAND_POSE_TRAY_A = Pose()
-HAND_POSE_TRAY_A.position.x = 0.81128375302
-HAND_POSE_TRAY_A.position.y = -0.347480380866
-HAND_POSE_TRAY_A.position.z = 0.719460495595
+HAND_POSE_TRAY_A.position.x = 1.44579963581
+HAND_POSE_TRAY_A.position.y = -0.614457620696
+HAND_POSE_TRAY_A.position.z = 0.55683081001
 
-HAND_POSE_TRAY_A.orientation.x = 0.488050112438
-HAND_POSE_TRAY_A.orientation.y = -0.767650849891
-HAND_POSE_TRAY_A.orientation.z = 0.118698020177
-HAND_POSE_TRAY_A.orientation.w = 0.398032712747
+HAND_POSE_TRAY_A.orientation.x = 0.608976649347
+HAND_POSE_TRAY_A.orientation.y = -0.732705451104
+HAND_POSE_TRAY_A.orientation.z = 0.178541615939
+HAND_POSE_TRAY_A.orientation.w = 0.245790670796
 
 CONTAINER_A = Deposit()
 CONTAINER_A.coord = [1.1, -0.1, -90]
@@ -111,7 +111,7 @@ TRAY_B.coord = [1.85, 0.0, -90]
 TRAY_B.hand = HAND_POSE_TRAY_B
 
 TRAY_A = Deposit()
-TRAY_A.coord = [1.5,  0.0, -90]
+TRAY_A.coord = [1.6,  0.0, -90]
 TRAY_A.hand = HAND_POSE_TRAY_A
 
 rospy.init_node("Manager")
@@ -158,18 +158,6 @@ def repositioning():
 	move_arm_init()
 	move_base_goal(0.0,0.0,0)
 
-	#delete_object("gelatin_box")
-	#put_object("master_chef_can", 1.3, 1.3, 0.0)
-	# delete_object("mug")
-
-	#put_object("mug", 1.2, 1.3, 0.0)
-	# put_object("master_chef_can", 1.3, 1.7, 0.45)
-	# put_object("sponge", 1.1, 1.8, 0.45)
-	#put_object("dice", 1.5, 1.4, 0.0)
-
-	# delete_object("spatula")
-	# put_object("spatula", 1.1, 1.4, 0.0)
-
 def move_arm_vision():
 	group_name = "arm"
 	move_group = moveit_commander.MoveGroupCommander(group_name)
@@ -186,7 +174,6 @@ def move_arm_vision():
 	move_group.go(joint_goal, wait=True)
 	move_group.stop()
 	move_hand(0)
-
 	
 def move_arm_base():
 	move_hand(0)
@@ -228,7 +215,10 @@ def compute_clostest_object(detected_obj):
 	return indice
 
 def calcul_distance(detected_obj):
-	obj_pose = grasp_node.transform_frame(detected_obj.object_posesXYZ[0], "map", "head_rgbd_sensor_rgb_frame").pose
+	return calc_dist(detected_obj.object_posesXYZ[0])
+
+def calc_dist(pose):
+	obj_pose = grasp_node.transform_frame(pose, "map", "head_rgbd_sensor_rgb_frame").pose
 	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
 	x = obj_pose.position.x - trans[0]
 	y = obj_pose.position.y - trans[1]
@@ -236,6 +226,13 @@ def calcul_distance(detected_obj):
 	dist_actual = np.sqrt(np.square(x) + np.square(y))
 	print(dist_actual)
 	return dist_actual
+
+def move_distance(dist):
+	speed = 0.1
+	start = time.time()
+	end = start + (dist / speed)
+	while time.time() < end:
+		move_base_vel(speed, 0.0,0.0)
 
 def move_object_on_the_way(stop):
 	move_head_tilt(-1.0)
@@ -283,33 +280,37 @@ def move_object_on_the_way(stop):
 				if best_grasp.pre_pose.position.z >= 0.7:
 					print("Grasp pose is too far on the table")
 					#return False
+				elif calc_dist(best_grasp.pre_pose) >= 0.6:
+					print("Grasp pose is too far")
+					move_distance(0.15)
+					rospy.sleep(2.)
 				else:
 					if grasp_node.grasp_ground(best_grasp):
 						move_hand(0)
 						print("Grasp successful!")
 					else:
 						print("Grasp failed!")
-				move_head_tilt(0.0)
+					move_head_tilt(0.0)
 
-				# Move back arm for easy navigation
-				move_arm_neutral()
-				#go_to_place([0,0,0])
-				go_to_place(BIN_B.coord)
-				rospy.sleep(1.)
+					# Move back arm for easy navigation
+					move_arm_neutral()
+					#go_to_place([0,0,0])
+					go_to_place(BIN_B.coord)
+					rospy.sleep(1.)
 
-				place_obj(BIN_B.hand)
-				rospy.sleep(1.)
+					place_obj(BIN_B.hand)
+					rospy.sleep(1.)
 
-				move_hand(1)
-				rospy.sleep(1.)
-				
-				move_arm_init()
-				move_hand(0)
-				#go_to_place([0,0,0])
-				go_to_place([1.2, 0.6, 90])
+					move_hand(1)
+					rospy.sleep(1.)
+					
+					move_arm_init()
+					move_hand(0)
+					#go_to_place([0,0,0])
+					go_to_place([trans[0], trans[1], 90])
 			else:
 				rospy.loginfo("No objects found, moving...")
-				move_base_vel(0.15,0.0,0.0)
+				move_distance(0.15)
 				rospy.sleep(2.)
 		else:
 
@@ -368,10 +369,10 @@ def move_object_on_the_way(stop):
 				move_arm_init()
 				move_hand(0)
 				#go_to_place([0,0,0])
-				go_to_place([1.2, 0.6, 90])
+				go_to_place([trans[0], trans[1], 90])
 			else:
 				rospy.loginfo("No objects found, moving...")
-				move_base_vel(0.15,0.0,0.0)
+				move_distance(0.15)
 				rospy.sleep(2.)
 
 def process(State):		
@@ -422,7 +423,7 @@ def process(State):
 
 	if State == "Ground":
 		if best_grasp.pre_pose.position.y > 1:
-			move_base_vel(0.65,0.0,0)
+			move_distance(0.65)
 			time.sleep(1)
 			resp = detect_object()
 			turn = -45
@@ -463,6 +464,8 @@ def process(State):
 			best_grasp = GraspConfig()
 			best_grasp = detected_grasp[0]
 
+
+
 	if State == "Table1":
 		if grasp_node.grasp_table1(best_grasp):
 			move_hand(0)
@@ -475,7 +478,6 @@ def process(State):
 		# Move back arm for easy navigation
 		move_arm_neutral()
 
-		repositioning()
 
 	elif State == "Table2":	
 		if grasp_node.grasp_table2(best_grasp):
@@ -536,6 +538,7 @@ def main():
 
 	repositioning()
 	move_arm_init()
+	#move_distance(1)
 	#go_to_place(CONTAINER_A.coord)
 	#go_to_place(TRAY_A.coord)
 	POSE_TABLE1 = [-0.1, 1.3, 90]
@@ -552,10 +555,12 @@ def main():
 			move_arm_init()
 			go_to_place(START)
 			move_object_on_the_way(1.1)
+			rospy.sleep(1.)
 			#Step 1: Clean up Objects Table 1
 			move_arm_init()
-			#go_to_place(POSE_TABLE1)
-			move_head_tilt(-0.7)
+			go_to_place(POSE_TABLE1)
+			move_head_tilt(0.0)
+			rospy.sleep(1.)
 
 			# Move the arm to the table height
 
@@ -563,12 +568,16 @@ def main():
 			joints = group.get_current_joint_values()
 			print(joints)
 			joints[0] = 0.3
+			try:
+				group.go(joints, wait=True)
+			except moveit_commander.MoveItCommanderException as exc:
+				print("")
 			
-			group.go(joints, wait=True)
 			group.stop()
 			# It is always good to clear your targets after planning with poses.
 			# Note: there is no equivalent function for clear_joint_value_targets()
 			group.clear_pose_targets()
+			move_head_tilt(-0.6)
 
 			if not process(State):
 				print("Grasp unsuccessful on the first Table, moving on...")
@@ -580,11 +589,12 @@ def main():
 			#Step 2: Clean up Objects Ground Area
 			move_arm_init()
 			go_to_place(POSE_GROUND1)
-			move_object_on_the_way(1.1)
+			move_object_on_the_way(1)
+
 			move_head_tilt(-0.8)
-			time.sleep(2)
+			rospy.sleep(2.)
 			go_to_place(POSE_GROUND2)
-			time.sleep(1)
+			rospy.sleep(1.)
 
 			#move_base_vel(0.1,0.0,0)
 			if not process(State):
@@ -601,7 +611,7 @@ def main():
 
 			move_head_tilt(-0.8)
 
-			rospy.sleep(1)
+			rospy.sleep(1.)
 
 			go_to_place(POSE_TABLE2)
 

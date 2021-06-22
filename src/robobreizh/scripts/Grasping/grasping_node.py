@@ -204,8 +204,9 @@ class Grasping():
 	def move_to(self, pose, target):
 		group = moveit_commander.MoveGroupCommander(target)
 		group.allow_replanning(True)
+		group.set_num_planning_attempts(5)
 		group.set_workspace([-3.0, -3.0, 3.0, 3.0])
-		#group.set_planning_time(10)
+		group.set_planning_time(10)
 		pose_to_perform = group.get_current_pose()
 
 		print(group.get_current_pose())
