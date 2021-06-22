@@ -144,11 +144,6 @@ HAND_POSE_TRAY_A.orientation.y = -0.476202393196
 HAND_POSE_TRAY_A.orientation.z = 0.524295252555
 HAND_POSE_TRAY_A.orientation.w = 0.400804472741
 
-TRAY_A = [1.5,  0.0, -90]
-TRAY_B = [1.85, 0.0, -90]
-BIN_A = [2.2,  0.0, -90]
-BIN_B = [2.75,  0.0, -90]
-
 CONTAINER_A = Deposit()
 CONTAINER_A.coord = [1.1, -0.1, -90]
 CONTAINER_A.hand = HAND_POSE_CONTAINER_A
@@ -284,9 +279,6 @@ def process(State):
 
 	indice = compute_clostest_object(detected_obj)
 
-	# (trans,rot) = listener.lookupTransform('/odom', '/head_rgbd_sensor_rgb_frame', rospy.Time(0))
-	# rospy.set_param('camera_position', [trans[0], trans[1], trans[2]])
-
 	# Get grasping pose
 	rospy.loginfo("Waiting for Grasping service...")
 	start = time.time()
@@ -310,6 +302,49 @@ def process(State):
 	best_grasp = GraspConfig()
 	best_grasp = detected_grasp[0]
 
+	if State == "Ground":
+		if best_grasp.pre_pose.position.y > 1:
+			move_base_vel(0.65,0.0,0)
+			time.sleep(1)
+			resp = detect_object()
+			turn = -45
+			while not resp:
+				turn = 45 if (turn == -45) else -45
+				rospy.loginfo("No objects found, moving around...")
+				move_base_vel(0.0,0.0,turn)
+				time.sleep(1)
+				resp = detect_object()
+
+			rospy.loginfo("Objects found!")
+
+			detected_obj = DetectedObj()
+			detected_obj = resp.detected_objects
+
+			indice = compute_clostest_object(detected_obj)
+
+			# Get grasping pose
+			rospy.loginfo("Waiting for Grasping service...")
+			start = time.time()
+			rospy.wait_for_service('/detect_grasps_server/detect_grasps')
+			grasp_service = rospy.ServiceProxy('/detect_grasps_server/detect_grasps', detect_grasps)
+
+			msg = GraspServerRequest()
+			msg.bounding_box = detected_obj.objects_bb[indice]
+			msg.global_cloud = detected_obj.cloud
+
+			try:
+		   		resp2 = grasp_service(msg)
+			except rospy.ServiceException as exc:
+				print("Service did not process request: " + str(exc))
+				return False
+
+			print("Time to find a good grasp: {}".format(time.time() - start))
+
+			detected_grasp = GraspConfigList()
+			detected_grasp = resp2.grasp_configs.grasps
+			best_grasp = GraspConfig()
+			best_grasp = detected_grasp[0]
+
 	if State == "Table1":
 		if grasp_node.grasp_table1(best_grasp):
 			move_hand(0)
@@ -327,7 +362,7 @@ def process(State):
 			return False
 
 	elif State == "Ground":
-		if best_grasp.pre_pose.position.z >= 0.4:
+		if best_grasp.pre_pose.position.z >= 0.7:
 			print("Grasp pose is too far on the table")
 			return False
 		else:
@@ -370,7 +405,8 @@ def main():
 	rospy.init_node("Manager")
 	
 	# For testing pupropse, go to the initial position
-	repositioning()
+	#repositioning()
+	#go_to_place(TRAY_A.coord)
 
 	POSE_TABLE1 = [-0.1, 1.3, 90]
 	POSE_TABLE2 = [1.25, 1.2, 90]
@@ -378,13 +414,13 @@ def main():
 	POSE_GROUND2 = [1.2, 0.8, 90]
 
 	State = "Table1"
-
+	#return_init_state()
 	while True:
 
 		if State == "Table1":
 
 			#Step 1: Clean up Objects Table 1
-			move_arm_vision()
+			move_arm_neutral()
 			go_to_place(POSE_TABLE1)
 			move_head_tilt(-0.6)
 
@@ -409,7 +445,7 @@ def main():
 		elif State == "Ground":
 
 			#Step 2: Clean up Objects Ground Area
-			move_arm_vision()
+			move_arm_neutral()
 			go_to_place(POSE_GROUND1)
 
 			move_head_tilt(-0.8)
@@ -425,8 +461,7 @@ def main():
 
 		elif State == "Table2":
 			#Step 3: Clean Objects Table 2
-			#move_arm_vision()
-			move_arm_vision()
+			move_arm_neutral()
 			go_to_place(POSE_GROUND2)
 
 			rospy.sleep(0.5)

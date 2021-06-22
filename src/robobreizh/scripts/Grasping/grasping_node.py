@@ -128,7 +128,7 @@ class Grasping():
 		state = navclient.get_state()
 		return True if state == 3 else False
 
-	def grasp_ground(self, grasp_pose, obj_pose):
+	def grasp_ground(self, grasp_pose):
 		time.sleep(1)
 
 		# Move toward the object
