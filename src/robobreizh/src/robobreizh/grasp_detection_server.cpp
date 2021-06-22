@@ -234,7 +234,12 @@ bool GraspDetectionServer::detectGrasps(robobreizh::detect_grasps::Request& req,
   std::vector<int> ind;
   pcl::removeNaNFromPointCloud(*cloud_filtered, *cloud_out, ind);
   std::cout << "size: " << cloud_out->points.size () << std::endl;
-  
+
+  if(cloud_out->points.size() == 0){
+    ROS_INFO_STREAM("Points cloud empty, exiting.");
+    return false;
+  }
+
   //Two steps: first segmentation on the z axis (groud or table) and then clustering
   // Create the segmentation object for the planar model and set all the parameters
   pcl::SACSegmentation<pcl::PointXYZRGB> seg;
@@ -267,41 +272,10 @@ bool GraspDetectionServer::detectGrasps(robobreizh::detect_grasps::Request& req,
   *cloud_filtered = *cloud_f;
   std::cout << "size: " << cloud_filtered->points.size () << std::endl;
 
-  /* // Creating the KdTree object for the search method of the extraction
-  pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZRGB>);
-  tree->setInputCloud (cloud_filtered);
-
-  std::vector<pcl::PointIndices> cluster_indices;
-  pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
-  ec.setClusterTolerance (0.01); // 2cm
-  ec.setMinClusterSize (100);
-  ec.setMaxClusterSize (25000);
-  ec.setSearchMethod (tree);
-  ec.setInputCloud (cloud_filtered);
-  ec.extract (cluster_indices);
-
-  int j = 0;
-  int max_cluster_size = 0;
-  PointCloudRGB::Ptr max_cluster (new PointCloudRGB);
-
-  for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
-  {
-    PointCloudRGB::Ptr cloud_cluster (new PointCloudRGB);
-    for (const auto& idx : it->indices)
-      cloud_cluster->push_back ((*cloud_filtered)[idx]); //*
-    cloud_cluster->width = cloud_cluster->size ();
-    cloud_cluster->height = 1;
-    cloud_cluster->is_dense = true;
-
-    std::cout << "PointCloud representing the Cluster: " << cloud_cluster->size () << " data points." << std::endl;
-
-    if(cloud_cluster->size () > max_cluster_size){
-      max_cluster_size = cloud_cluster->size ();
-      max_cluster = cloud_cluster;
-    }
-
-    j++;
-  }*/
+  if(cloud_filtered->points.size() == 0){
+    ROS_INFO_STREAM("No objects detected, exiting.");
+    return false;
+  }
 
   PointCloudRGBA::Ptr temp_cloud (new PointCloudRGBA);
   GraspDetectionServer::PointCloudXYZRGBtoXYZRGBA(*cloud_filtered, *temp_cloud);

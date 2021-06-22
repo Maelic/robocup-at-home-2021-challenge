@@ -89,6 +89,15 @@ class ObjectsDetection():
 	def handle_object_detection(self, req):
 		return self.main_loop()
 
+	def detect_dummy_object():
+		image_data = rgbd.get_image()
+		points_data = rgbd.get_points()
+		h_image = rgbd.get_h_image()
+		rgbd.set_h(130, 140)
+		region = rgbd.get_region()
+
+		interact(f, lower=(0, 255, 5), upper=(0, 255, 5))
+
 	def main_loop(self):
 		
 		image_sub = rospy.wait_for_message('/hsrb/head_rgbd_sensor/rgb/image_rect_color', Image)
@@ -112,19 +121,20 @@ class ObjectsDetection():
 		threshold = 40.0
 		
 		for obj in detections:
-			if (float(obj[1]) > threshold): #Check if the confidence is above a threshold
-				labels.append(String(obj[0]))
-				x, y, w, h = obj[2][0], obj[2][1], obj[2][2], obj[2][3]
+			if not (obj[0] == "019_pitcher_base"): #Remove the pitcher because it's impossible to grasp (too big)
+				if (float(obj[1]) > threshold): #Check if the confidence is above a threshold
+					labels.append(String(obj[0]))
+					x, y, w, h = obj[2][0], obj[2][1], obj[2][2], obj[2][3]
 
-				boundingbox = BoundingBoxCoord()
-				x_min, y_min, x_max, y_max = self.convertBack(x,y,w,h)
-				boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in self.convertBack(x,y,w,h))
+					boundingbox = BoundingBoxCoord()
+					x_min, y_min, x_max, y_max = self.convertBack(x,y,w,h)
+					boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in self.convertBack(x,y,w,h))
 
-				bounding_boxes.append(boundingbox)
+					bounding_boxes.append(boundingbox)
 
-				points.append([int(x), int(y)])
-				#pc = self.crop_object_pointcloud(x_min, y_min, x_max, y_max, [x,y], pointcloud_sub)
-				#point_clouds.append(pc)
+					points.append([int(x), int(y)])
+					#pc = self.crop_object_pointcloud(x_min, y_min, x_max, y_max, [x,y], pointcloud_sub)
+					#point_clouds.append(pc)
 
 		if not labels:
 			final_msg = DetectedObj()

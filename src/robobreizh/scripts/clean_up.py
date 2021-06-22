@@ -21,68 +21,15 @@ import tf2_ros
 from geometry_msgs.msg import Point32, Point, PoseStamped, Pose, Twist
 from xml_utils import ObjectBrowserYolo
 from tf import TransformListener
-
-#State class
-class State():
-	NONE = 0
-	SEARCH = 1
-	MOVE = 2
-	TAKE = 3
-	DEPOSIT = 4
-	END = 5
+import actionlib
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from ipywidgets import interact
 
 #Deposits information
 class Deposit():
 	name = ""
 	coord = [0,0,0]
 	hand = Pose()
-
-
-#Object information
-class Curent_object(object):
-	def __init__(name, deposit, coord):
-		name = name
-		deposit_name = deposit
-		coord = coord
-
-
-def go_to_table():
-	put_object("cracker_box", 0.6, 1.9, 0.5)
-	put_object("mustard_bottle", 1.0, 1.8, 0.5)
-	put_object("mug", 0.8, 1.7, 0.5)
-	put_object("foam_brick", 1.2, 1.7, 0.5)
-	rospy.init_node('main')
-
-	
-	# Move toward the table
-	# look down a little
-	move_head_tilt(-0.5)
-
-	# move position
-	move_arm_init()
-	# move in front of the long table
-	move_base_goal(1, 1, 90)
-
-def demo_grasping():
-    # put_object("cracker_box", 0.6, 1.9, 0.5)
-    # put_object("mustard_bottle", 1.0, 1.8, 0.5)
-    # put_object("mug", 0.8, 1.7, 0.5)
-    # put_object("foam_brick", 1.2, 1.7, 0.5)
-
-	
-	# Move toward the table
-	# look down a little
-    move_head_tilt(-0.5)
-
-	# move position
-    move_arm_init()
-	# move in front of the long table
-    move_base_goal(0.6, 1, 90)
-	# Look for objects
-    time.sleep(1)
-    #vision_module = Vision()
-    #objects = vision_module.searchObject()
-
 
 HAND_POSE_CONTAINER_A = Pose()
 HAND_POSE_CONTAINER_A.position.x =  1.1096606162
@@ -105,24 +52,24 @@ HAND_POSE_CONTAINER_B.orientation.z = -0.506663948606
 HAND_POSE_CONTAINER_B.orientation.w = 0.471403476684
 
 HAND_POSE_BIN_B = Pose()
-HAND_POSE_BIN_B.position.x = 2.81238017415
-HAND_POSE_BIN_B.position.y = -0.253838684177
-HAND_POSE_BIN_B.position.z = 0.509733161963
+HAND_POSE_BIN_B.position.x = 1.93789748557
+HAND_POSE_BIN_B.position.y = -1.43153592659
+HAND_POSE_BIN_B.position.z = 0.606634427137
 
-HAND_POSE_BIN_B.orientation.x = 0.412303506642
-HAND_POSE_BIN_B.orientation.y = 0.526391918239
-HAND_POSE_BIN_B.orientation.z = -0.370938176591
-HAND_POSE_BIN_B.orientation.w = 0.544454991423
+HAND_POSE_BIN_B.orientation.x = 0.630930406779
+HAND_POSE_BIN_B.orientation.y = -0.605703459114
+HAND_POSE_BIN_B.orientation.z = 0.361888663505
+HAND_POSE_BIN_B.orientation.w = 0.322624761365
 
 HAND_POSE_BIN_A = Pose()
-HAND_POSE_BIN_A.position.x = 2.30236312784
-HAND_POSE_BIN_A.position.y = -0.576004612216
-HAND_POSE_BIN_A.position.z = 0.721292795453
+HAND_POSE_BIN_A.position.x = 1.8449635853
+HAND_POSE_BIN_A.position.y = -1.19952466253
+HAND_POSE_BIN_A.position.z = 0.547488762745
 
-HAND_POSE_BIN_A.orientation.x = 0.469319502933
-HAND_POSE_BIN_A.orientation.y = -0.51863385196
-HAND_POSE_BIN_A.orientation.z = 0.538487616008
-HAND_POSE_BIN_A.orientation.w = 0.469882133278
+HAND_POSE_BIN_A.orientation.x = 0.385707010245
+HAND_POSE_BIN_A.orientation.y = -0.650125208442
+HAND_POSE_BIN_A.orientation.z = 0.350242183268
+HAND_POSE_BIN_A.orientation.w = 0.553080219007
 
 HAND_POSE_TRAY_B = Pose()
 HAND_POSE_TRAY_B.position.x = 1.91710359408
@@ -135,14 +82,14 @@ HAND_POSE_TRAY_B.orientation.z = 0.660406564155
 HAND_POSE_TRAY_B.orientation.w = 0.33911857834
 
 HAND_POSE_TRAY_A = Pose()
-HAND_POSE_TRAY_A.position.x = 1.369695501
-HAND_POSE_TRAY_A.position.y = -0.85318024349
-HAND_POSE_TRAY_A.position.z = 0.604044405094
+HAND_POSE_TRAY_A.position.x = 0.81128375302
+HAND_POSE_TRAY_A.position.y = -0.347480380866
+HAND_POSE_TRAY_A.position.z = 0.719460495595
 
-HAND_POSE_TRAY_A.orientation.x = 0.581120937063
-HAND_POSE_TRAY_A.orientation.y = -0.476202393196
-HAND_POSE_TRAY_A.orientation.z = 0.524295252555
-HAND_POSE_TRAY_A.orientation.w = 0.400804472741
+HAND_POSE_TRAY_A.orientation.x = 0.488050112438
+HAND_POSE_TRAY_A.orientation.y = -0.767650849891
+HAND_POSE_TRAY_A.orientation.z = 0.118698020177
+HAND_POSE_TRAY_A.orientation.w = 0.398032712747
 
 CONTAINER_A = Deposit()
 CONTAINER_A.coord = [1.1, -0.1, -90]
@@ -192,13 +139,13 @@ def detect_object():
 	start = time.time()
 	end = start + 4
 	try:
-   		resp = detect_service(msg)
+		resp = detect_service(msg)
 	except rospy.ServiceException as exc:
 		print("Service did not process request: " + str(exc))
 
 	while(resp.detected_objects.object_names[0].data == "nothing"):
 		try:
-	   		resp = detect_service(msg)
+			resp = detect_service(msg)
 		except rospy.ServiceException as exc:
 			print("Service did not process request: " + str(exc))
 		if time.time() >= end:
@@ -232,11 +179,32 @@ def move_arm_vision():
 
 	joints_index = {'arm_lift_joint':0, 'arm_flex_joint':1, 'arm_roll_joint':2, 'wrist_flex_joint':3, 'wrist_roll_joint':4, 'wrist_ft_sensor_frame_joint':5, 'wrist_ft_sensor_frame_inverse_joint':6, 'hand_palm_joint':7,}
 
-	joint_goal[3] = -1.5
-	joint_goal[2] = 1.5
+	joint_goal[3] = -1.2
+	joint_goal[2] = 1.0
+	joint_goal[1] = -0.1
 
 	move_group.go(joint_goal, wait=True)
 	move_group.stop()
+	move_hand(0)
+
+	
+def move_arm_base():
+	move_hand(0)
+
+	joint_trajectory_publisher = rospy.Publisher(
+			'/hsrb/arm_trajectory_controller/command',
+			JointTrajectory, queue_size=10)
+
+	msg = JointTrajectory()
+	msg.header.stamp = rospy.Time.now()
+	msg.joint_names = ["arm_flex_joint", "arm_roll_joint", "wrist_flex_joint"]
+	msg.points.append(JointTrajectoryPoint())
+	msg.points[0].positions = [-0.1, 1.5, -1.5]
+	msg.points[0].velocities = [0.0, 0.0, 0.0]
+	msg.points[0].time_from_start = rospy.Duration(2.0)
+
+	joint_trajectory_publisher.publish(msg)
+	rospy.sleep(2)
 
 def compute_clostest_object(detected_obj):
 
@@ -259,18 +227,96 @@ def compute_clostest_object(detected_obj):
 
 	return indice
 
+def f(lower = 0, upper = 255):
+	yellow_region = (h_image > lower) & (h_image < upper)
+	plt.imshow(yellow_region)
+
+def move_object_on_the_way():
+	move_head_tilt(-1.0)
+	bounding_box = [170, 380, 470, 480]
+	# Look for objects
+	resp = ""
+	boundingbox = BoundingBoxCoord()
+	boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in bounding_box)
+
+	while True:
+		(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+		print(trans)
+		if trans[1] >= 1.1:
+			return True
+		
+		# Get grasping pose
+		rospy.loginfo("Waiting for Grasping service...")
+		start = time.time()
+		rospy.wait_for_service('/detect_grasps_server/detect_grasps')
+		grasp_service = rospy.ServiceProxy('/detect_grasps_server/detect_grasps', detect_grasps)
+
+		pc = rospy.wait_for_message('/hsrb/head_rgbd_sensor/depth_registered/rectified_points', PointCloud2)
+
+		msg = GraspServerRequest()
+		msg.bounding_box = boundingbox
+		msg.global_cloud = pc
+
+		try:
+			resp = grasp_service(msg)
+		except rospy.ServiceException as exc:
+			print("Service did not process request: " + str(exc))
+
+		# Grasp to the bin
+
+		if resp != "":
+			detected_grasp = GraspConfigList()
+			detected_grasp = resp.grasp_configs.grasps
+			best_grasp = GraspConfig()
+			best_grasp = detected_grasp[0]
+
+			if best_grasp.pre_pose.position.z >= 0.7:
+				print("Grasp pose is too far on the table")
+				return False
+			else:
+				if grasp_node.grasp_ground(best_grasp):
+					move_hand(0)
+					print("Grasp successful!")
+				else:
+					print("Grasp failed!")
+					return False
+			move_head_tilt(0.0)
+
+			# Move back arm for easy navigation
+			move_arm_neutral()
+			go_to_place([0,0,0])
+			go_to_place(BIN_B.coord)
+
+			place_obj(BIN_B.hand)
+
+			move_hand(1)
+			rospy.sleep(0.5)
+			
+			move_arm_init()
+			move_hand(0)
+			go_to_place([0,0,0])
+			go_to_place(trans)
+
+		rospy.loginfo("No objects found, moving...")
+		move_base_vel(0.1,0.0,0.0)
+		rospy.sleep(2)
+
+
 def process(State):		
 	yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
 
 	# Look for objects
 	rospy.loginfo("Waiting for Object Detection service...")
 	resp = detect_object()
+	turn = -20
 
 	while not resp:
 		rospy.loginfo("No objects found, moving...")
-		move_base_vel(0.1,0.0,0)
+		move_base_vel(0.0,0.0,turn)
 		time.sleep(1)
 		resp = detect_object()
+		turn = 40 if (turn < 0) else -40
+
 
 	rospy.loginfo("Objects found!")
 
@@ -290,7 +336,7 @@ def process(State):
 	msg.global_cloud = detected_obj.cloud
 
 	try:
-   		resp2 = grasp_service(msg)
+		resp2 = grasp_service(msg)
 	except rospy.ServiceException as exc:
 		print("Service did not process request: " + str(exc))
 		return False
@@ -333,7 +379,7 @@ def process(State):
 			msg.global_cloud = detected_obj.cloud
 
 			try:
-		   		resp2 = grasp_service(msg)
+				resp2 = grasp_service(msg)
 			except rospy.ServiceException as exc:
 				print("Service did not process request: " + str(exc))
 				return False
@@ -352,7 +398,13 @@ def process(State):
 		else:
 			print("Grasp failed!")
 			return False
-			
+		move_head_tilt(0.0)
+
+		# Move back arm for easy navigation
+		move_arm_neutral()
+
+		repositioning()
+
 	elif State == "Table2":	
 		if grasp_node.grasp_table2(best_grasp):
 			move_hand(0)
@@ -360,6 +412,11 @@ def process(State):
 		else:
 			print("Grasp failed!")
 			return False
+		move_head_tilt(0.0)
+
+		# Move back arm for easy navigation
+		move_arm_neutral()
+		go_to_place(POSE_GROUND1)
 
 	elif State == "Ground":
 		if best_grasp.pre_pose.position.z >= 0.7:
@@ -372,11 +429,12 @@ def process(State):
 			else:
 				print("Grasp failed!")
 				return False
+		move_head_tilt(0.0)
 
-	move_head_tilt(0.0)
+		# Move back arm for easy navigation
+		move_arm_neutral()
+		go_to_place(POSE_GROUND1)
 
-	# Move back arm for easy navigation
-	move_arm_neutral()
 
 	category = yolo_object_browser.getCategory(detected_obj.object_names[indice].data)
 	print("Object category: {}".format(category))
@@ -403,26 +461,30 @@ def return_init_state():
 def main():
 	yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
 	rospy.init_node("Manager")
-	
 	# For testing pupropse, go to the initial position
-	#repositioning()
-	#go_to_place(TRAY_A.coord)
 
+	#repositioning()
+	move_arm_init()
+	#go_to_place(CONTAINER_A.coord)
+	#go_to_place(TRAY_A.coord)
 	POSE_TABLE1 = [-0.1, 1.3, 90]
-	POSE_TABLE2 = [1.25, 1.2, 90]
+	POSE_TABLE2 = [1.25, 1.3, 90]
 	POSE_GROUND1 = [1.2, 0.6, 90]
 	POSE_GROUND2 = [1.2, 0.8, 90]
+	START = [-0.1, 0.6, 90]
 
 	State = "Table1"
 	#return_init_state()
 	while True:
 
 		if State == "Table1":
-
+			move_arm_init()
+			go_to_place(START)
+			move_object_on_the_way()
 			#Step 1: Clean up Objects Table 1
-			move_arm_neutral()
+			move_arm_init()
 			go_to_place(POSE_TABLE1)
-			move_head_tilt(-0.6)
+			move_head_tilt(-0.7)
 
 			# Move the arm to the table height
 
@@ -445,7 +507,7 @@ def main():
 		elif State == "Ground":
 
 			#Step 2: Clean up Objects Ground Area
-			move_arm_neutral()
+			move_arm_init()
 			go_to_place(POSE_GROUND1)
 
 			move_head_tilt(-0.8)
@@ -461,12 +523,12 @@ def main():
 
 		elif State == "Table2":
 			#Step 3: Clean Objects Table 2
-			move_arm_neutral()
+			move_arm_init()
 			go_to_place(POSE_GROUND2)
 
 			rospy.sleep(0.5)
 
-			move_head_tilt(-0.6)
+			move_head_tilt(-0.8)
 
 			rospy.sleep(1)
 
@@ -474,89 +536,25 @@ def main():
 
 			rospy.sleep(0.5)
 
+			# Move the arm to the table height
+
+			group = moveit_commander.MoveGroupCommander('arm')
+			joints = group.get_current_joint_values()
+			print(joints)
+			joints[0] = 0.3
+			
+			group.go(joints, wait=True)
+			group.stop()
+
+			group.clear_pose_targets()
+
 			if not process(State):
 				print("Grasp unsuccessful on the Table2, exiting.")
 				State = "Table2"
 				return 0
 		
 
-#State machine
-def start():
-	#Init
-	nbTidyObject = 0
-	previous_state = Stat.NONE
-	state = State.SEARCH
-
-	while True:
-
-		if state == State.SEARCH:
-			#Detect and localize not deposit object
-			detected_object = Vision.searchObject()
-
-			#Next state
-			previous_state = state
-			state = State.MOVE
-
-		elif state == State.MOVE:
-			#Go to the destination
-			if previous_state == State.SEARCH:
-				Navigation.moveTo(detect_object.coord)
-			elif previous_state == State.TAKE:
-				Navigation.moveTo(associatedDeposit(detect_object).coord)
-
-			#Next state
-			previous_state = state
-			if previous_state == State.SEARCH:
-				state = State.TAKE
-			elif previous_state == State.TAKE:
-				state = State.DEPOSIT
-
-		elif state == State.TAKE:
-			#Take not deposit object
-			Movements.takeObject(detected_object)
-
-			#Next state
-			previous_state = state
-			state = State.MOVE
-
-		elif state == State.DEPOSIT:
-			#Open deposit
-			Movements.openDeposit(associatedDeposit(detect_object))
-
-			#Deposit object
-			Movements.depositObject(associatedDeposit(detect_object))
-
-			#Close deposit
-			Movements.closeDeposit(associatedDeposit(detect_object))
-
-			#Number tidy object +1
-			nbTidyObject = nbTidyObject + 1
-
-			#Next state
-			previous_state = state
-			if nbTidyObject == 30:
-				state = State.END
-			else:
-				state = State.SEARCH
-		
-		elif state == State.END:
-			#Exit 
-			break
-
 if __name__ == "__main__":
 	#Start state machine
 	main()
 
-
-
-#Vision:
-#object() = Vision.searchObject()
-
-#Navigation:
-#Navigation.moveTo([x,y,z])
-
-#Movements
-#Movements.takeObject(object())
-#Movements.openDeposit(deposit_x())
-#Movements.depositObject(deposit_x())
-#Movements.closeDeposit(deposit_x())
