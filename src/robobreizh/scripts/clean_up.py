@@ -24,6 +24,7 @@ from tf import TransformListener
 import actionlib
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import threading
+from objects import *
 
 #Deposits information
 class Deposit():
@@ -121,6 +122,8 @@ grasp_node = Grasping()
 listener = tf.TransformListener()
 yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
 
+State = "Table2"
+
 def get_deposit(category):
 	dic_depo = {'Food': TRAY_A, 'Kitchen': CONTAINER_A, 'Tool': BIN_A, 'Shape': BIN_B, 'Task': BIN_A, 'Discarded': BIN_B}
 
@@ -138,7 +141,7 @@ def detect_object():
 	msg = Int64(4)
 	resp = ""
 	start = time.time()
-	end = start + 2
+	end = start + 1
 	try:
 		resp = detect_service(msg)
 	except rospy.ServiceException as exc:
@@ -284,8 +287,8 @@ def move_object_on_the_way(stop):
 					#return False
 				elif calc_dist(best_grasp.pre_pose, "odom") >= 0.5:
 					print("Grasp pose is too far")
-					move_distance(0.15)
-					rospy.sleep(2.)
+					move_distance(0.1)
+					rospy.sleep(1.)
 				else:
 					if grasp_node.grasp_ground(best_grasp):
 						move_hand(0)
@@ -312,8 +315,8 @@ def move_object_on_the_way(stop):
 					go_to_place([trans[0], trans[1], 90])
 			else:
 				rospy.loginfo("No objects found, moving...")
-				move_distance(0.15)
-				rospy.sleep(2.)
+				move_distance(0.1)
+				rospy.sleep(1.)
 		else:
 
 			rospy.loginfo("Objects found!")
@@ -324,7 +327,6 @@ def move_object_on_the_way(stop):
 			if calcul_distance(detected_obj) < 0.7:
 
 				indice = compute_clostest_object(detected_obj)
-				rospy.sleep(1.)
 				# Get grasping pose
 				rospy.loginfo("Waiting for Grasping service...")
 				start = time.time()
@@ -366,7 +368,6 @@ def move_object_on_the_way(stop):
 				place_obj(depo.hand)
 
 				move_hand(1)
-				rospy.sleep(0.5)
 				
 				move_arm_init()
 				move_hand(0)
@@ -374,8 +375,8 @@ def move_object_on_the_way(stop):
 				go_to_place([trans[0], trans[1], 90])
 			else:
 				rospy.loginfo("No objects found, moving...")
-				move_distance(0.15)
-				rospy.sleep(2.)
+				move_distance(0.1)
+				rospy.sleep(1.)
 
 def process(State):		
 	yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
@@ -494,23 +495,6 @@ def process(State):
 		move_arm_neutral()
 		go_to_place(POSE_GROUND1)
 
-	elif State == "Ground":
-		if best_grasp.pre_pose.position.z >= 0.7:
-			print("Grasp pose is too far on the table")
-			return False
-		else:
-			if grasp_node.grasp_ground(best_grasp):
-				move_hand(0)
-				print("Grasp successful!")
-			else:
-				print("Grasp failed!")
-				return False
-		move_head_tilt(0.0)
-
-		# Move back arm for easy navigation
-		move_arm_neutral()
-		go_to_place(POSE_GROUND1)
-
 
 	category = yolo_object_browser.getCategory(detected_obj.object_names[indice].data)
 	print("Object category: {}".format(category))
@@ -545,24 +529,23 @@ def timer_thread(start):
 def main():
 	rospy.init_node("Manager")
 	# For testing pupropse, go to the initial position
-
+	spawn_obj()
 	repositioning()
 	start = rospy.get_time()
 	print(start)
 	t = threading.Thread(target=timer_thread, args=(start,))
 	t.start()
-
+	State = "Table2"
 	move_arm_init()
 	#move_distance(1)
 	#go_to_place(CONTAINER_A.coord)
 	#go_to_place(TRAY_A.coord)
 	POSE_TABLE1 = [-0.1, 1.3, 90]
-	POSE_TABLE2 = [1.25, 1.3, 90]
-	POSE_GROUND1 = [1.2, 0.6, 90]
-	POSE_GROUND2 = [1.2, 0.8, 90]
+	POSE_TABLE2 = [1.1, 1.3, 90]
+	POSE_GROUND1 = [1.1, 0.5, 90]
+	POSE_GROUND2 = [1.1, 0.8, 90]
 	START = [-0.1, 0.6, 90]
 
-	State = "Table1"
 	#return_init_state()
 	
 	while True:
@@ -597,31 +580,14 @@ def main():
 
 			if not process(State):
 				print("Grasp unsuccessful on the first Table, moving on...")
-				State = "Ground"
-				return_init_state()
-
-		elif State == "Ground":
-
-			#Step 2: Clean up Objects Ground Area
-			move_arm_init()
-			go_to_place(POSE_GROUND1)
-			move_object_on_the_way(1)
-
-			move_head_tilt(-0.8)
-			rospy.sleep(2.)
-			go_to_place(POSE_GROUND2)
-			rospy.sleep(1.)
-
-			#move_base_vel(0.1,0.0,0)
-			if not process(State):
-				print("Grasp unsuccessful on the Ground, moving on...")
 				State = "Table2"
 				return_init_state()
 
 		elif State == "Table2":
-			#Step 3: Clean Objects Table 2
+			#Step 2: Clean Objects Table 2
 			move_arm_init()
-			go_to_place(POSE_GROUND2)
+			go_to_place(POSE_GROUND1)
+			move_object_on_the_way(1.1)
 
 			rospy.sleep(0.5)
 
