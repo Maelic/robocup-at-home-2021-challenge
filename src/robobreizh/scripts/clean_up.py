@@ -544,7 +544,9 @@ def main():
 	POSE_TABLE2 = [1.1, 1.3, 90]
 	POSE_GROUND1 = [1.1, 0.5, 90]
 	POSE_GROUND2 = [1.1, 0.8, 90]
-	START = [-0.1, 0.6, 90]
+	START = [-0.1, 0.5, 90]
+	POSE_GROUND12 = [0.8, 0.5, 90]
+	POSE_GROUND22 = [0.8, 0.8, 90]
 
 	#return_init_state()
 	
@@ -590,10 +592,12 @@ def main():
 			move_object_on_the_way(1.1)
 
 			rospy.sleep(0.5)
-
-			move_head_tilt(-0.8)
+			go_to_place(POSE_GROUND12)
+			move_object_on_the_way(1.1)
 
 			rospy.sleep(1.)
+
+			move_head_tilt(-0.8)
 
 			go_to_place(POSE_TABLE2)
 
