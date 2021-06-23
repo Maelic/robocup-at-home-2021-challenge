@@ -285,7 +285,7 @@ def move_object_on_the_way(stop):
 				if best_grasp.pre_pose.position.z >= 0.7:
 					print("Grasp pose is too far on the table")
 					#return False
-				elif calc_dist(best_grasp.pre_pose, "odom") >= 0.5:
+				elif calc_dist(best_grasp.actual_pose, "odom") >= 0.7:
 					print("Grasp pose is too far")
 					move_distance(0.1)
 					rospy.sleep(1.)
