@@ -529,7 +529,7 @@ def timer_thread(start):
 def main():
 	rospy.init_node("Manager")
 	# For testing pupropse, go to the initial position
-	spawn_obj()
+	#spawn_obj()
 	repositioning()
 	start = rospy.get_time()
 	print(start)
