@@ -285,7 +285,7 @@ def move_object_on_the_way(stop):
 				if best_grasp.pre_pose.position.z >= 0.7:
 					print("Grasp pose is too far on the table")
 					#return False
-				elif calc_dist(best_grasp.actual_pose, "odom") >= 0.7:
+				elif calc_dist(best_grasp.actual_pose, "odom") >= 0.6:
 					print("Grasp pose is too far")
 					move_distance(0.1)
 					rospy.sleep(1.)
@@ -528,18 +528,12 @@ def timer_thread(start):
 
 def main():
 	rospy.init_node("Manager")
-	# For testing pupropse, go to the initial position
-	#spawn_obj()
-	repositioning()
 	start = rospy.get_time()
 	print(start)
 	t = threading.Thread(target=timer_thread, args=(start,))
 	t.start()
 	State = "Table2"
-	move_arm_init()
-	#move_distance(1)
-	#go_to_place(CONTAINER_A.coord)
-	#go_to_place(TRAY_A.coord)
+
 	POSE_TABLE1 = [-0.1, 1.3, 90]
 	POSE_TABLE2 = [1.1, 1.3, 90]
 	POSE_GROUND1 = [1.1, 0.5, 90]
@@ -547,8 +541,6 @@ def main():
 	START = [-0.1, 0.5, 90]
 	POSE_GROUND12 = [0.8, 0.5, 90]
 	POSE_GROUND22 = [0.8, 0.8, 90]
-
-	#return_init_state()
 	
 	while True:
 
