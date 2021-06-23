@@ -5,7 +5,7 @@ with open("objects_list.txt") as objects_list_file:
     objects_list = objects_list_file.read().split("\n")
     objects_list = [i[8:] for i in objects_list]
 
-number = [5, 5, 5]
+number = [5, 5, 10]
 
 objects_to_place = [random.sample(objects_list, i) for i in number]
 zones = [

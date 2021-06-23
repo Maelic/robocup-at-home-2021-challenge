@@ -23,6 +23,7 @@ from xml_utils import ObjectBrowserYolo
 from tf import TransformListener
 import actionlib
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+import threading
 
 #Deposits information
 class Deposit():
@@ -215,10 +216,10 @@ def compute_clostest_object(detected_obj):
 	return indice
 
 def calcul_distance(detected_obj):
-	return calc_dist(detected_obj.object_posesXYZ[0])
+	return calc_dist(detected_obj.object_posesXYZ[0], "head_rgbd_sensor_rgb_frame")
 
-def calc_dist(pose):
-	obj_pose = grasp_node.transform_frame(pose, "map", "head_rgbd_sensor_rgb_frame").pose
+def calc_dist(pose, frame):
+	obj_pose = grasp_node.transform_frame(pose, "map", frame).pose
 	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
 	x = obj_pose.position.x - trans[0]
 	y = obj_pose.position.y - trans[1]
@@ -235,7 +236,6 @@ def move_distance(dist):
 		move_base_vel(speed, 0.0,0.0)
 
 def move_object_on_the_way(stop):
-	move_head_tilt(-1.0)
 	bounding_box = [170, 300, 470, 480]
 	# Look for objects
 	resp = ""
@@ -243,6 +243,8 @@ def move_object_on_the_way(stop):
 	boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in bounding_box)
 
 	while True:
+		move_head_tilt(-1.0)
+
 		(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
 		print(trans)
 		if trans[1] >= stop:
@@ -280,7 +282,7 @@ def move_object_on_the_way(stop):
 				if best_grasp.pre_pose.position.z >= 0.7:
 					print("Grasp pose is too far on the table")
 					#return False
-				elif calc_dist(best_grasp.pre_pose) >= 0.6:
+				elif calc_dist(best_grasp.pre_pose, "odom") >= 0.5:
 					print("Grasp pose is too far")
 					move_distance(0.15)
 					rospy.sleep(2.)
@@ -295,10 +297,10 @@ def move_object_on_the_way(stop):
 					# Move back arm for easy navigation
 					move_arm_neutral()
 					#go_to_place([0,0,0])
-					go_to_place(BIN_B.coord)
+					go_to_place(BIN_A.coord)
 					rospy.sleep(1.)
 
-					place_obj(BIN_B.hand)
+					place_obj(BIN_A.hand)
 					rospy.sleep(1.)
 
 					move_hand(1)
@@ -531,12 +533,25 @@ def return_init_state():
 	move_head_tilt(0.0)
 	move_arm_init()
 
+def timer_thread(start):
+	end = start + 299
+	while True:
+		current = rospy.get_time()
+		if current >= end:
+			print(current)
+			rospy.signal_shutdown("Timeout reached")
+		rospy.sleep(1.)
 
 def main():
 	rospy.init_node("Manager")
 	# For testing pupropse, go to the initial position
 
 	repositioning()
+	start = rospy.get_time()
+	print(start)
+	t = threading.Thread(target=timer_thread, args=(start,))
+	t.start()
+
 	move_arm_init()
 	#move_distance(1)
 	#go_to_place(CONTAINER_A.coord)
@@ -547,8 +562,9 @@ def main():
 	POSE_GROUND2 = [1.2, 0.8, 90]
 	START = [-0.1, 0.6, 90]
 
-	State = "Ground"
+	State = "Table1"
 	#return_init_state()
+	
 	while True:
 
 		if State == "Table1":
@@ -632,7 +648,6 @@ def main():
 			if not process(State):
 				print("Grasp unsuccessful on the Table2, exiting.")
 				State = "Table2"
-				return 0
 		
 
 if __name__ == "__main__":
