@@ -609,8 +609,10 @@ def main():
 			joints = group.get_current_joint_values()
 			print(joints)
 			joints[0] = 0.3
-			
-			group.go(joints, wait=True)
+			try:
+				group.go(joints, wait=True)
+			except moveit_commander.MoveItCommanderException as exc:
+				print("")
 			group.stop()
 
 			group.clear_pose_targets()
