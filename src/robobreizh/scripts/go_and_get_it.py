@@ -148,8 +148,12 @@ def go_to_place(place):
 def parse_message(msg):
 	# Current online and competition parsing
 	food_name = msg.split(" to ")[0]
-	person_side = msg.split('person ')[1]
-   
+	person_split = msg.split('person ')
+
+	if len(person_split) > 1:
+		person_side = person_split[1]
+	else:
+		person_side = 'left'
 	# Offline version
 	#food_name = msg
 	#person_side =  msg.split('person ')[1]
