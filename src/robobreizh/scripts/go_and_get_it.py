@@ -468,7 +468,7 @@ def obstacle_avoidance2():
 	#move_head_left()
 	#grasp_node.move_arm_vision()
 	move_head_tilt(-1.0)
-	zone = [100, 100, 540, 460]
+	zone = [200, 100, 440, 460]
 	graspL = look_for_grasps(zone)
 
 	if not graspL:
