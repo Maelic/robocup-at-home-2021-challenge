@@ -15,10 +15,7 @@ from std_msgs.msg import Float32, Int64
 from robobreizh.msg import CloudIndexed, CloudSources, GraspConfigList, DetectedObj, BoundingBoxCoord, GraspConfig, GraspServerRequest
 from robobreizh.srv import detect_grasps, object_detection, grasping
 from Grasping.grasping_node import Grasping
-import cv2
-from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-import matplotlib.pyplot as plt
 import moveit_commander
 
 #State class
@@ -246,6 +243,30 @@ def perform_grasp(zone):
 		best_grasp = GraspConfig()
 		best_grasp = detected_grasp[0]
 
+		# Move hand to the desired height
+		group_name = "arm"
+		group = moveit_commander.MoveGroupCommander(group_name)
+
+		group.allow_replanning(True)
+		group.set_num_planning_attempts(5)
+		group.set_workspace([-3.0, -3.0, 3.0, 3.0])
+		group.set_planning_time(10)
+
+		pose_to_perform = group.get_current_pose()
+
+		print(group.get_current_pose())
+		pose_to_perform.header.frame_id = "/odom"
+		pose_to_perform.pose.position.z = best_grasp.pre_pose.position.z
+		print(pose_to_perform)
+		#group.set_pose_target(pose_to_perform)
+		group.set_joint_value_target(pose_to_perform, "hand_palm_link", True)
+
+		plan = group.go()
+		# Calling `stop()` ensures that there is no residual movement
+		group.stop()
+		# It is always good to clear your targets after planning with poses.
+		# Note: there is no equivalent function for clear_joint_value_targets()
+		group.clear_pose_targets()
 		if grasp_node.grasp_table2(best_grasp):
 			rospy.sleep(0.5)
 			move_hand(0)
@@ -375,7 +396,7 @@ def obstacle_avoidance():
 		# Move clostest object
 		obstacles = [poseL, poseR]
 		ind = compute_clostest_obstacle([poseL.actual_pose, poseR.actual_pose])
-		(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+		(trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
 
 		if dist_points2([obstacles[ind].actual_pose.position.x, obstacles[ind].actual_pose.position.y], trans) >= 0.4:
 			move_base_vel(0.1,0.0,0.0)
@@ -393,11 +414,10 @@ def obstacle_avoidance():
 
 			move_hand(0)
 			move_arm_init()
-			move_base_goal(2.6, 1.8, 180)
+			move_base_goal(START_ROOM2)
 			move_base_vel(0.1,0.0,0.0)
-			res = obstacle_avoidance()
-			if res == "exit":
-				return "exit"
+			go_shortcut()
+
 	rospy.sleep(1.)
 
 def compute_clostest_obstacle(obstacles):
@@ -433,31 +453,50 @@ def dist_points(A, B):
 
 	return(np.sqrt(np.square(x) + np.square(y)))
 
-def obstacle_avoidance2():
-# Check on the left
-	move_head_left()
-	zone = [200, 100, 640, 430]
-	graspL = look_for_grasps(zone)
-	move_head_right()
-	zone = [300, 100, 540, 430]
-	graspR = look_for_grasps(zone)
-	all_grasp = []
-	for x in graspL:
-		all_grasp.append(x.actual_pose.position)
-	for x in graspR:
-		all_grasp.append(x.actual_pose.position)
+def move_distance(dist, angle):
+	speed = 0.1
+	start = time.time()
+	end = start + (dist / speed)
+	while time.time() < end:
+		move_base_vel_rad(speed, 0.0, angle)
 
-	# Compute all the distance between all grasp and take the longest one
-	longest = 0
-	points = []
-	for i in range(20):
-		for j in range(20):
-			if dist_points(graspL[i].position, graspR):
-				pass
-	if poseL.position.x >= 2.1 and poseL.position.y >= 2.5:
-		move_base_goal(1.65, 2.65, 90)
-		pass
-		
+def obstacle_avoidance2():
+	# Check on the left
+	#grasp_node.move_arm_vision()
+	move_head_left()
+	zone = [200, 100, 640, 460]
+	graspL = look_for_grasps(zone)
+
+	if not graspL:
+		go_shortcut()
+		return "exit"
+	# Move clostest object
+	obstacles = []
+	for grasp in graspL:
+		obstacles.append(grasp.actual_pose)
+
+	ind = compute_clostest_obstacle(obstacles)
+	(trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
+	print(dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans))
+	if dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans) >= 0.65:
+		move_distance(0.1,0.2)
+		rospy.sleep(1.)
+		res = obstacle_avoidance2()
+		if res == "exit":
+			return "exit"
+	else:
+		move_hand(0)
+		grasp_node.grasp_ground(graspL[ind])
+		move_hand(1)
+		move_arm_init()
+		move_base_goal(2.6, 1.8, 180)
+		move_distance(0.1,0.0)
+		move_arm_neutral()
+
+		move_hand(0)
+		move_arm_init()
+		move_base_goal(START_ROOM2)
+		go_shortcut()
 
 def compute_dist(sourcePose):
 	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
@@ -513,7 +552,7 @@ def start():
 			move_arm_init()
 			# Navigate to room 2 
 			go_to_place(START_ROOM2)
-			#obstacle_avoidance()
+			obstacle_avoidance2()
 			move_head_tilt(-0.7)
 			grasp_node.move_arm_vision()
 

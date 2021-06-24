@@ -158,6 +158,7 @@ class Grasping():
 		move_hand(1)
 
 		#self.visualize_pose(grasp_pose.pre_pose)
+		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.1
 		self.move_to(grasp_pose.pre_pose, 'arm')
 
 		#time.sleep(1)
