@@ -162,7 +162,7 @@ class Grasping():
 		self.move_to(grasp_pose.pre_pose, 'whole_body_light')
 
 		#time.sleep(1)
-		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.1
+		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.12
 
 		self.move_to(grasp_pose.actual_pose, 'whole_body_light')
 

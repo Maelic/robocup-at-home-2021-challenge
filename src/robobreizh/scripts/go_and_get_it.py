@@ -19,6 +19,7 @@ import cv2
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 import moveit_commander
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 
 #State class
 class State():
@@ -211,7 +212,6 @@ def detect_object(object_to_find):
 
 def look_for_objects(object_to_find):
 	move_head_tilt(-0.3)
-	go_to_place(DETECT_OBJSECOND)
 
 	result, obj = detect_object(object_to_find)
 	if result:
@@ -505,6 +505,12 @@ def obstacle_avoidance2():
 	grasp_node.move_arm_depose()
 	move_hand(1)
 	move_arm_init()
+
+	move_base_goal(2.6, trans[1], 90)
+
+
+	obstacle_avoidance2()
+
 	go_to_place(START_ROOM2)
 	move_hand(0)
 	
@@ -569,14 +575,15 @@ def start():
 			go_to_place(START_ROOM2)
 			obstacle_avoidance2()
 			move_head_tilt(0.0)
-			grasp_node.move_arm_vision()
+			go_to_place(DETECT_OBJFIRST)
 
 			# Next state
 			state = State.AWAIT_ORDERS
 
 		elif state == State.AWAIT_ORDERS:
+			go_to_place(DETECT_OBJSECOND)
+
 			# Go to place with objects
-			go_to_place(DETECT_OBJFIRST)
 			# TODO: What if instruction is in the wrong format or if it's equal to done
 			instruction  = rospy.wait_for_message('/message', String)
 			print('DEBUG instruction = %s' % instruction.data)
@@ -585,7 +592,6 @@ def start():
 				print('Bring %s to person %s' %(food, person_side))
 
 				# Next state
-				state = State.FIND_OBJECT    
 				# TODO: Check objects
 				obj = look_for_objects(food)
 				
