@@ -207,7 +207,7 @@ def compute_clostest_object(detected_obj):
 		#Compute distance between the robot and the object
 		p = grasp_node.transform_frame(detected_obj.object_posesXYZ[i], "map", "head_rgbd_sensor_rgb_frame").pose
 		x = p.position.x - trans[0]
-		y = p.position.x - trans[1]
+		y = p.position.y - trans[1]
 
 		dist_actual = np.sqrt(np.square(x) + np.square(y))
 		print(dist_actual)
@@ -255,7 +255,7 @@ def move_object_on_the_way(stop):
 
 		rospy.loginfo("Waiting for Object Detection service...")
 		resp_obj = detect_object()
-		rospy.sleep(1)
+		rospy.sleep(1.)
 		if not resp_obj:
 			# Get grasping pose
 			rospy.loginfo("Waiting for Grasping service...")
@@ -285,7 +285,7 @@ def move_object_on_the_way(stop):
 				if best_grasp.pre_pose.position.z >= 0.7:
 					print("Grasp pose is too far on the table")
 					#return False
-				elif calc_dist(best_grasp.actual_pose, "odom") >= 0.6:
+				elif calc_dist(best_grasp.pre_pose, "odom") >= 0.6:
 					print("Grasp pose is too far")
 					move_distance(0.1)
 					rospy.sleep(1.)
@@ -374,7 +374,7 @@ def move_object_on_the_way(stop):
 				#go_to_place([0,0,0])
 				go_to_place([trans[0], trans[1], 90])
 			else:
-				rospy.loginfo("No objects found, moving...")
+				rospy.loginfo("Object is too far, moving")
 				move_distance(0.1)
 				rospy.sleep(1.)
 
@@ -528,19 +528,24 @@ def timer_thread(start):
 
 def main():
 	rospy.init_node("Manager")
+	# For testing pupropse, go to the initial position
+	spawn_obj()
 	start = rospy.get_time()
 	print(start)
 	t = threading.Thread(target=timer_thread, args=(start,))
 	t.start()
 	State = "Table2"
-
+	move_arm_init()
+	#move_distance(1)
+	#go_to_place(CONTAINER_A.coord)
+	#go_to_place(TRAY_A.coord)
 	POSE_TABLE1 = [-0.1, 1.3, 90]
 	POSE_TABLE2 = [1.1, 1.3, 90]
 	POSE_GROUND1 = [1.1, 0.5, 90]
 	POSE_GROUND2 = [1.1, 0.8, 90]
-	START = [-0.1, 0.5, 90]
-	POSE_GROUND12 = [0.8, 0.5, 90]
-	POSE_GROUND22 = [0.8, 0.8, 90]
+	START = [-0.1, 0.6, 90]
+
+	#return_init_state()
 	
 	while True:
 
@@ -584,12 +589,10 @@ def main():
 			move_object_on_the_way(1.1)
 
 			rospy.sleep(0.5)
-			go_to_place(POSE_GROUND12)
-			move_object_on_the_way(1.1)
-
-			rospy.sleep(1.)
 
 			move_head_tilt(-0.8)
+
+			rospy.sleep(1.)
 
 			go_to_place(POSE_TABLE2)
 
@@ -601,6 +604,7 @@ def main():
 			joints = group.get_current_joint_values()
 			print(joints)
 			joints[0] = 0.3
+			
 			try:
 				group.go(joints, wait=True)
 			except moveit_commander.MoveItCommanderException as exc:

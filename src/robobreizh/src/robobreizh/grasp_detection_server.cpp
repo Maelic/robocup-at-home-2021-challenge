@@ -103,7 +103,7 @@ GraspDetectionServer::GraspPose GraspDetectionServer::createPickingEEFPose(robob
     tf::Transform tf_pregrasp_odom_(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, 0, -0.1));
     tf::Transform tf_pregrasp_odom = tf_grasp_odom * tf_pregrasp_odom_;
     tf::poseTFToMsg(tf_pregrasp_odom, grasp_pose.pre);
-    grasp_pose.pre.position.z = grasp_pose.pre.position.z + 0.1;
+    //grasp_pose.pre.position.z = grasp_pose.pre.position.z + 0.12;
 
     // Find after-grasp pose
     // tf::Transform tf_after_grasp_odom_(tf::Quaternion(0, 0, 0, 1), tf::Vector3(0, 0, -0.15));

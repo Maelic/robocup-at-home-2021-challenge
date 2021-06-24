@@ -40,6 +40,23 @@ def move_base_vel(vx, vy, vw):
     twist.angular.z = vw / 180.0 * math.pi  # 「度」から「ラジアン」に変換します
     base_vel_pub.publish(twist)  # 速度指令をパブリッシュします
 
+def move_base_vel_rad(vx, vy, vw):
+    u"""台車を速度制御する関数
+
+    引数:
+        vx (float): 直進方向の速度指令値 [m/s]（前進が正、後進が負）
+        vy (float): 横方向の速度指令値 [m/s]（左が正、右が負）
+        vw (float): 回転方向の速度指令値 [deg/s]（左回転が正、右回転が負）
+
+    """
+
+    # 速度指令値をセットします
+    twist = Twist()
+    twist.linear.x = vx
+    twist.linear.y = vy
+    twist.angular.z = vw 
+    base_vel_pub.publish(twist)  # 速度指令をパブリッシュします
+
 
 def get_current_time_sec():
     u"""現在時刻を返す関数
