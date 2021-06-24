@@ -142,6 +142,7 @@ rospy.init_node("Manager_task2")
 grasp_node = Grasping()
 listener = tf.TransformListener()
 
+
 WAIT = []
 
 def go_to_place(place):
@@ -293,7 +294,16 @@ def move_head_right():
 def go_left():
 	go_to_place([])
 
+start2 = True
+
+def go_shortcut():
+	move_base_vel_rad(0.5,0.0,0.8)
+	move_base_goal(1.65, 2.65, 180)
+	move_base_goal(1.65, 3.5, 90)
+
 def obstacle_avoidance():
+	global start2
+
 	(trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
 	if trans[0] <= 1.6 and trans[1] >= 3:
 		return True 
@@ -302,19 +312,30 @@ def obstacle_avoidance():
 	zone = [200, 100, 640, 430]
 	poseL = look_for_grasps(zone)
 
-	if not poseL:
+	if not poseL and start2:
+		go_shortcut()
+		start2 = False
+		return "exit"
+	elif not poseL:
 		move_base_vel_rad(0.2,0.0,0.3)
 		res = obstacle_avoidance()
+		start2 = False
 	else:
-		poseL = poseL[0]
+		start2 = False
 	print(poseL)
 
 	# Shortcut
-	if poseL.actual_pose.position.x >= 2.1 and poseL.actual_pose.position.y >= 2.3:
-		move_base_goal(1.65, 2.65, 180)
-		move_base_goal(1.65, 3.5, 90)
-		return "exit"
+	shortcut = True
+	for pose in poseL:
+		if pose.actual_pose.position.x <= 2.1 and pose.actual_pose.position.y <= 2.3:
+			shortcut = False
 		# pass
+	if shortcut:
+		go_shortcut()
+
+		return "exit"
+	poseL = poseL[0]
+
 	# else:
 	print("dist: {}".format(dist_points2([poseL.actual_pose.position.x,poseL.actual_pose.position.y], trans)))
 	if dist_points2([poseL.actual_pose.position.x,poseL.actual_pose.position.y], trans) >= 0.6:
@@ -492,7 +513,7 @@ def start():
 			move_arm_init()
 			# Navigate to room 2 
 			go_to_place(START_ROOM2)
-			obstacle_avoidance()
+			#obstacle_avoidance()
 			move_head_tilt(-0.7)
 			grasp_node.move_arm_vision()
 
