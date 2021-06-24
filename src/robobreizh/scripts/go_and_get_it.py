@@ -15,6 +15,8 @@ from std_msgs.msg import Float32, Int64
 from robobreizh.msg import CloudIndexed, CloudSources, GraspConfigList, DetectedObj, BoundingBoxCoord, GraspConfig, GraspServerRequest
 from robobreizh.srv import detect_grasps, object_detection, grasping
 from Grasping.grasping_node import Grasping
+import cv2
+from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 import moveit_commander
 
@@ -148,12 +150,8 @@ def go_to_place(place):
 def parse_message(msg):
 	# Current online and competition parsing
 	food_name = msg.split(" to ")[0]
-	person_split = msg.split('person ')
-
-	if len(person_split) > 1:
-		person_side = person_split[1]
-	else:
-		person_side = 'left'
+	person_side = msg.split('person ')[1]
+   
 	# Offline version
 	#food_name = msg
 	#person_side =  msg.split('person ')[1]
@@ -290,7 +288,7 @@ def move_head_left():
 	joints_index = {'head_pan_joint':0, 'head_tilt_joint':1}
 
 	joint_goal[0] = 0.5
-	joint_goal[1] = -0.9
+	joint_goal[1] = -1.1
 
 	try:
 		move_group.go(joint_goal, wait=True)
@@ -468,7 +466,7 @@ def obstacle_avoidance2():
 	# Check on the left
 	#grasp_node.move_arm_vision()
 	move_head_left()
-	zone = [200, 100, 640, 460]
+	zone = [150, 100, 590, 460]
 	graspL = look_for_grasps(zone)
 
 	if not graspL:
@@ -482,24 +480,23 @@ def obstacle_avoidance2():
 	ind = compute_clostest_obstacle(obstacles)
 	(trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
 	print(dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans))
-	if dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans) >= 0.65:
+	if dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans) >= 0.5:
 		move_distance(0.1,0.2)
 		rospy.sleep(1.)
 		res = obstacle_avoidance2()
 		if res == "exit":
 			return "exit"
 	else:
-		move_hand(0)
 		grasp_node.grasp_ground(graspL[ind])
-		move_hand(1)
+		move_hand(0)
 		move_arm_init()
 		move_base_goal(2.6, 1.8, 180)
 		move_distance(0.1,0.0)
 		move_arm_neutral()
-
-		move_hand(0)
+		grasp_node.move_arm_depose()
+		move_hand(1)
 		move_arm_init()
-		move_base_goal(START_ROOM2)
+		go_to_place(START_ROOM2)
 		go_shortcut()
 
 def compute_dist(sourcePose):
@@ -522,8 +519,8 @@ def look_for_grasps(bounding_box):
 	# Get grasping pose
 	rospy.loginfo("Waiting for Grasping service...")
 	start = time.time()
-	rospy.wait_for_service('/detect_grasps_server/detect_grasps')
-	grasp_service = rospy.ServiceProxy('/detect_grasps_server/detect_grasps', detect_grasps)
+	rospy.wait_for_service('/detect_grasps_server2/detect_grasps')
+	grasp_service = rospy.ServiceProxy('/detect_grasps_server2/detect_grasps', detect_grasps)
 
 	pc = rospy.wait_for_message('/hsrb/head_rgbd_sensor/depth_registered/rectified_points', PointCloud2)
 

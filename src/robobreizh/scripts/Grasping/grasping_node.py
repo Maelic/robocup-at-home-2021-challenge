@@ -209,6 +209,24 @@ class Grasping():
 		move_group.stop()
 		move_hand(0)
 
+	def move_arm_depose(self):
+		group_name = "arm"
+		move_group = moveit_commander.MoveGroupCommander(group_name)
+		move_group.allow_replanning(True)
+		#move_group.set_workspace([-2.0, -2.0, 2.0, 2.0])
+		joint_goal = move_group.get_current_joint_values()
+
+		joints_index = {'arm_lift_joint':0, 'arm_flex_joint':1, 'arm_roll_joint':2, 'wrist_flex_joint':3, 'wrist_roll_joint':4, 'wrist_ft_sensor_frame_joint':5, 'wrist_ft_sensor_frame_inverse_joint':6, 'hand_palm_joint':7,}
+
+		joint_goal[1] = -0.4
+
+		try:
+			move_group.go(joint_goal, wait=True)
+		except moveit_commander.MoveItCommanderException as exc:
+			print("")
+		move_group.stop()
+		move_hand(0)
+
 	def transform_frame(self, pose, frame_dest, frame_source):
 		tf2_buffer = tf2_ros.Buffer(rospy.Duration(1200.0)) #tf buffer length
 		tf2_listener = tf2_ros.TransformListener(tf2_buffer)

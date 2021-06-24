@@ -49,9 +49,11 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${PCL_INCLUDE_DIRS})
 
 ## Declare a C++ executable
 add_executable(${PROJECT_NAME}_detect_grasps_server src/robobreizh/grasp_detection_server.cpp)
+add_executable(${PROJECT_NAME}_detect_grasps_server2 src/robobreizh/grasp_detection_server2.cpp)
 
 ## Rename C++ executable without prefix
 set_target_properties(${PROJECT_NAME}_detect_grasps_server PROPERTIES OUTPUT_NAME detect_grasps_server PREFIX "")
+set_target_properties(${PROJECT_NAME}_detect_grasps_server2 PROPERTIES OUTPUT_NAME detect_grasps_server2 PREFIX "")
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}_grasp_plotter src/${PROJECT_NAME}/grasp_plotter.cpp)
@@ -62,6 +64,13 @@ target_link_libraries(${PROJECT_NAME}_detect_grasps_server
                       ${GPD_LIB}
                       ${PCL_LIBRARIES}
                       ${catkin_LIBRARIES})
+
+target_link_libraries(${PROJECT_NAME}_detect_grasps_server2
+                      ${PROJECT_NAME}_grasp_plotter
+                      ${GPD_LIB}
+                      ${PCL_LIBRARIES}
+                      ${catkin_LIBRARIES})
+
 target_link_libraries(${PROJECT_NAME}_grasp_plotter
                       ${GPD_LIB}
                       ${catkin_LIBRARIES})
