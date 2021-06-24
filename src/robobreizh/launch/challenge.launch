@@ -1,7 +1,7 @@
 <launch>  
   <node pkg="robobreizh" type="detection_node.py" name="detection" required="true" />
   <node pkg="robobreizh" type="detect_grasps_server" name="detect_grasps_server" required="true" />
-  <node pkg="robobreizh" type="detect_grasps_server2" name="detect_grasps_server2" required="true" />
+  <node pkg="robobreizh" type="detect_grasps_server2" name="detect_grasps_server2" />
 
   <node pkg="robobreizh" type="go_and_get_it.py" name="go_and_get_it" required="true" />
 </launch>

@@ -258,7 +258,7 @@ def perform_grasp(zone):
 
 		print(group.get_current_pose())
 		pose_to_perform.header.frame_id = "/odom"
-		pose_to_perform.pose.position.z = best_grasp.pre_pose.position.z
+		pose_to_perform.pose.position.z = best_grasp.actual_pose.position.z
 		print(pose_to_perform)
 		#group.set_pose_target(pose_to_perform)
 		group.set_joint_value_target(pose_to_perform, "hand_palm_link", True)
@@ -465,13 +465,14 @@ def move_distance(dist, angle):
 def obstacle_avoidance2():
 	# Check on the left
 	#grasp_node.move_arm_vision()
-	move_head_left()
-	zone = [150, 100, 590, 460]
+	#move_head_left()
+	#grasp_node.move_arm_vision()
+	move_head_tilt(-1.0)
+	zone = [100, 100, 540, 460]
 	graspL = look_for_grasps(zone)
 
 	if not graspL:
-		go_shortcut()
-		return "exit"
+		return 0
 	# Move clostest object
 	obstacles = []
 	for grasp in graspL:
@@ -480,26 +481,37 @@ def obstacle_avoidance2():
 	ind = compute_clostest_obstacle(obstacles)
 	(trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
 	print(dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans))
-	if dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans) >= 0.5:
-		move_distance(0.1,0.4)
-		rospy.sleep(1.)
-		res = obstacle_avoidance2()
-		if res == "exit":
-			return "exit"
-	else:
-		grasp_node.grasp_ground(graspL[ind])
-		move_hand(0)
-		move_arm_init()
-		move_base_goal(2.6, 1.8, 270)
-		move_distance(0.1,0.0)
-		move_arm_neutral()
-		grasp_node.move_arm_depose()
-		move_hand(1)
-		move_arm_init()
-		go_to_place(START_ROOM2)
-		move_hand(0)
+	while dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans) >= 0.5:
+		move_distance(0.06,0.0)
+		rospy.sleep(0.5)
+		graspL = look_for_grasps(zone)
 
-		go_shortcut()
+		if not graspL:
+			return 0
+		# Move clostest object
+		obstacles = []
+		for grasp in graspL:
+			obstacles.append(grasp.actual_pose)
+
+		ind = compute_clostest_obstacle(obstacles)
+		(trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
+		print(dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans))
+
+	grasp_node.grasp_ground(graspL[ind])
+	move_hand(0)
+	move_arm_init()
+	move_base_goal(2.6, 1.8, 270)
+	move_arm_neutral()
+	grasp_node.move_arm_depose()
+	move_hand(1)
+	move_arm_init()
+	go_to_place(START_ROOM2)
+	move_hand(0)
+	
+	# (trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+
+	# if trans[1] >= 3:
+	# 	return 0 
 
 def compute_dist(sourcePose):
 	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
@@ -556,7 +568,7 @@ def start():
 			# Navigate to room 2 
 			go_to_place(START_ROOM2)
 			obstacle_avoidance2()
-			move_head_tilt(-0.7)
+			move_head_tilt(0.0)
 			grasp_node.move_arm_vision()
 
 			# Next state
@@ -574,7 +586,6 @@ def start():
 
 				# Next state
 				state = State.FIND_OBJECT    
-				grasp_node.move_arm_vision()
 				# TODO: Check objects
 				obj = look_for_objects(food)
 				

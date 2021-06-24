@@ -159,10 +159,12 @@ class Grasping():
 
 		#self.visualize_pose(grasp_pose.pre_pose)
 		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.1
-		self.move_to(grasp_pose.pre_pose, 'arm')
+		self.move_to(grasp_pose.pre_pose, 'whole_body_light')
 
 		#time.sleep(1)
-		self.move_to(grasp_pose.actual_pose, 'arm')
+		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.1
+
+		self.move_to(grasp_pose.actual_pose, 'whole_body_light')
 
 		#move_hand(0)
 
@@ -198,8 +200,8 @@ class Grasping():
 
 		joints_index = {'arm_lift_joint':0, 'arm_flex_joint':1, 'arm_roll_joint':2, 'wrist_flex_joint':3, 'wrist_roll_joint':4, 'wrist_ft_sensor_frame_joint':5, 'wrist_ft_sensor_frame_inverse_joint':6, 'hand_palm_joint':7,}
 
-		joint_goal[3] = -1.4
-		joint_goal[2] = 1.4
+		joint_goal[3] = -2.0
+		#joint_goal[2] = 1.4
 		#joint_goal[1] = -0.1
 
 		try:
