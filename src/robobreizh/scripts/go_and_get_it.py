@@ -481,7 +481,7 @@ def obstacle_avoidance2():
 	(trans,rot) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
 	print(dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans))
 	if dist_points2([obstacles[ind].position.x, obstacles[ind].position.y], trans) >= 0.5:
-		move_distance(0.1,0.2)
+		move_distance(0.1,0.4)
 		rospy.sleep(1.)
 		res = obstacle_avoidance2()
 		if res == "exit":
@@ -490,13 +490,15 @@ def obstacle_avoidance2():
 		grasp_node.grasp_ground(graspL[ind])
 		move_hand(0)
 		move_arm_init()
-		move_base_goal(2.6, 1.8, 180)
+		move_base_goal(2.6, 1.8, 270)
 		move_distance(0.1,0.0)
 		move_arm_neutral()
 		grasp_node.move_arm_depose()
 		move_hand(1)
 		move_arm_init()
 		go_to_place(START_ROOM2)
+		move_hand(0)
+
 		go_shortcut()
 
 def compute_dist(sourcePose):
