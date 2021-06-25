@@ -73,34 +73,6 @@ def find_HSV(obj):
 	cv2.waitKey()
 
 
-class Manager(object):
-	def __init__():
-		self.objects = {}
-		self.current_object = Tidy_object() 
-		self.deposit_1 = Deposit("deposit_1", [0,0], [0,0,0])
-		self.deposit_2 = Deposit("deposit_1", [0,0], [0,0,0])
-		self.deposit_3 = Deposit("deposit_1", [0,0], [0,0,0])
-		self.deposit_4 = Deposit("deposit_1", [0,0], [0,0,0])
-		self.deposit_5 = Deposit("deposit_1", [0,0], [0,0,0])
-		self.current_state = State()
-
-		
-
-#Deposit coordinate
-def associatedDeposit(detect_object):
-	if detect_object.deposit_name == "deposit_1":
-		deposit = deposit_1()
-	elif detect_object.deposit_name == "deposit_2":
-		deposit = deposit_2()
-	elif detect_object.deposit_name == "deposit_3":
-		deposit = deposit_3()
-	elif detect_object.deposit_name == "deposit_4":
-		deposit = deposit_4()
-	elif detect_object.deposit_name == "deposit_5":
-		deposit = deposit_5()
-
-	return deposit
-
 def move_body(x, y, z):
 	p = PoseStamped()
 
@@ -597,7 +569,7 @@ def start():
 				
 				# If no object is detected we perform a random grasp in the middle
 				if obj == False:
-					zone = [170, 100, 470, 380]
+					zone = [170, 0, 470, 480]
 					boundingbox = BoundingBoxCoord()
 					boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in zone)
 					perform_grasp(boundingbox)
