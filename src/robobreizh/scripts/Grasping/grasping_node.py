@@ -159,12 +159,14 @@ class Grasping():
 
 		#self.visualize_pose(grasp_pose.pre_pose)
 		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.1
-		self.move_to(grasp_pose.pre_pose, 'whole_body_light')
+		self.move_to(grasp_pose.pre_pose, 'arm')
 
 		#time.sleep(1)
-		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.12
+		# Check if the grasp pose z vaalue is above the hand depth to avoid htting the ground while trying to grasp 
+		if grasp_pose.actual_pose.position.z <= 0.066:
+			grasp_pose.actual_pose.position.z = 0.06
 
-		self.move_to(grasp_pose.actual_pose, 'whole_body_light')
+		self.move_to(grasp_pose.actual_pose, 'arm')
 
 		#move_hand(0)
 

@@ -444,6 +444,8 @@ def obstacle_avoidance2():
 	graspL = look_for_grasps(zone)
 
 	if not graspL:
+		move_distance(0.1,0.0)
+
 		return 0
 	# Move clostest object
 	obstacles = []
@@ -472,7 +474,7 @@ def obstacle_avoidance2():
 	grasp_node.grasp_ground(graspL[ind])
 	move_hand(0)
 	move_arm_init()
-	move_base_goal(2.6, 1.8, 270)
+	move_base_goal(trans[0], trans[1], 270)
 	move_arm_neutral()
 	grasp_node.move_arm_depose()
 	move_hand(1)
@@ -480,16 +482,10 @@ def obstacle_avoidance2():
 
 	move_base_goal(2.6, trans[1], 90)
 
-
 	obstacle_avoidance2()
 
-	go_to_place(START_ROOM2)
-	move_hand(0)
-	
-	# (trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+	go_to_place(DETECT_OBJFIRST)
 
-	# if trans[1] >= 3:
-	# 	return 0 
 
 def compute_dist(sourcePose):
 	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
