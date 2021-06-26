@@ -126,8 +126,8 @@ TRAY_A.hand = HAND_POSE_TRAY_A
 
 POSE_TABLE1 = [-0.1, 1.3, 90]
 POSE_TABLE2 = [1.1, 1.3, 90]
-POSE_GROUND1 = [1.1, 0.6, 90]
-POSE_GROUND2 = [1.1, 0.8, 90]
+POSE_GROUND1 = [1.0, 0.6, 90]
+POSE_GROUND2 = [1.0, 0.8, 90]
 START = [-0.1, 0.6, 90]
 
 #State class
@@ -447,7 +447,7 @@ def main():
 
 	# For testing pupropse, go to the initial position
 	# repositionning()
-	#spawn_obj()
+	spawn_obj()
 	state = State.INIT
 	current_dep = BIN_B
 
@@ -458,11 +458,12 @@ def main():
 			move_hand(0)
 			open_drawers()
 
-			go_to_place(POSE_GROUND1)
 
 			state = State.LOOK
 
 		elif state == State.LOOK:
+			go_to_place(POSE_GROUND1)
+
 			move_head_tilt(-1.0)
 
 			move_arm_init()
