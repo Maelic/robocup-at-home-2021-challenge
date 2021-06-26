@@ -405,10 +405,10 @@ class RGBD():
         u"""抽出領域から計算されたxyzを取得する関数"""
         return self._xyz
 
-    def get_deposit():
+    def get_deposit(self):
         return self._deposit
-        
-    def set_deposit(depo):
+
+    def set_deposit(self, depo):
         self._deposit = depo
 
     def set_xyz(self, xyz):

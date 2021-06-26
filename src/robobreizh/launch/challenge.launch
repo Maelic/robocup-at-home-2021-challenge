@@ -3,5 +3,5 @@
   <node pkg="robobreizh" type="detect_grasps_server" name="detect_grasps_server" required="true" />
   <node pkg="robobreizh" type="detect_grasps_server2" name="detect_grasps_server2" />
 
-  <node pkg="robobreizh" type="go_and_get_it.py" name="go_and_get_it" required="true" />
+  <node pkg="robobreizh" type="clean_upV2.py" name="clean_upV2" required="true" />
 </launch>

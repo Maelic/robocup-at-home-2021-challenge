@@ -29,6 +29,9 @@ import signal
 import math
 import geometry_msgs.msg
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from nav_msgs.msg import Odometry
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+import copy
 
 #Deposits information
 class Deposit():
@@ -135,10 +138,12 @@ class State():
 	DEPOSE = 3
 	END = 4
 
+
 rospy.init_node("Stage2")
 
 grasp_node = Grasping()
 listener = tf.TransformListener()
+yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
 
 def detect_object():
 	rospy.wait_for_service('/object_detection')
@@ -166,8 +171,8 @@ def detect_object():
 	ind = compute_clostest_object(detected_obj.object_posesXYZ)
 	return detected_obj.objects_bb[ind], detected_obj.object_names[ind].data, detected_obj.cloud
 
-def go_to_place(place):
-	move_base_goal(place[0], place[1], place[2])
+def place_obj(hand_pose):
+	grasp_node.move_to(hand_pose, "arm")
 
 def signal_handler(sig, frame):
 	print('You pressed Ctrl+C!')
@@ -277,7 +282,7 @@ def move_arm_table(height):
 	group.clear_pose_targets()
 
 def get_grasp_random():
-	zone = [0, 0, 640, 480]
+	zone = [0, 100, 640, 480]
 	boundingbox = BoundingBoxCoord()
 	boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in zone)
 
@@ -298,7 +303,6 @@ def get_grasp_random():
 	except rospy.ServiceException as exc:
 		print("Service did not process request: " + str(exc))
 
-	# Grasp the object
 	if resp != "":
 		detected_grasp = GraspConfigList()
 		detected_grasp = resp.grasp_configs.grasps
@@ -318,47 +322,59 @@ def go_to_place(place):
 	move_base_goal(place[0], place[1], place[2])
 
 def move_distance(dist):
-	speed = 0.2
+	speed = 0.1
 	start = time.time()
 	end = start + (dist / speed)
 	while time.time() < end:
 		move_base_vel(speed, 0.0,0.0)
 
 def move_angle(angle_r):
-	t0 = rospy.Time.now().secs
-	cmd = Twist()
-	cmd.angular.z = angle_r
+	base_vel_pub = rospy.Publisher('/hsrb/command_velocity', Twist, queue_size=1)
+	vel_msg = Twist()
+	print(angle_r)
+	angular_speed = 30 * 2 * math.pi / 360
+
+	if angle_r < 0:
+		vel_msg.angular.z = abs(angular_speed)
+	else:
+		vel_msg.angular.z = -abs(angular_speed)
+
+	vel_msg.linear.x = 0.0
+	vel_msg.linear.y = 0.0
+	t0 = rospy.Time.now().to_sec()
 	current_angle = 0
-	rate = rospy.Rate(10)
-	angular_speed_r = 0.2
 
-	# loop to publish the velocity estimate, current_distance = velocity * (t1 - t0)
-	while (current_angle < angle_r):
+	while(current_angle < abs(angle_r)):
+		base_vel_pub.publish(vel_msg)
+		t1 = rospy.Time.now().to_sec()
+		current_angle = angular_speed*(t1-t0)
 
-		# Publish the velocity
-		vel_publisher.publish(cmd)
-		# t1 is the current time
-		t1 = rospy.Time.now().secs
-		# Calculate current angle
-		current_angle = angular_speed_r * (t1 - t0)
-		rate.sleep()
+	vel_msg.angular.z = 0
+	base_vel_pub.publish(vel_msg)
+
+
 
 def move_toward_object():
 	(trans,rot) = listener.lookupTransform('/base_link', '/current', rospy.Time(0))
-	theta = tf.transformations.euler_from_quaternion(rot)
+	
 
 	dist = np.linalg.norm(trans)
 
+	(trans,rot) = listener.lookupTransform('/odom', '/current', rospy.Time(0))
+	theta = tf.transformations.euler_from_quaternion(rot)
 	print("DIST: {}".format(dist))
 	print("ANGLE: {}".format(theta))
 
-	if dist <= 0.5:
+	if dist <= 0.4:
 		return 0
+	(trans2,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+	print(trans2)
 
 	move_angle(theta[2])
 
-	d_to_obj = dist - 0.5
+	d_to_obj = dist - 0.4
 	move_distance(d_to_obj)
+
 
 def calc_dist(pose1, pose2):
 	x = pose1[0] - pose2[0]

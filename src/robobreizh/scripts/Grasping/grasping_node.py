@@ -31,6 +31,7 @@ import tf2_geometry_msgs
 import threading
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+import copy
 
 class Grasping():
 	def __init__(self):
@@ -158,14 +159,37 @@ class Grasping():
 		move_hand(1)
 
 		#self.visualize_pose(grasp_pose.pre_pose)
-		#grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.1
+		grasp_pose.pre_pose.position.z = grasp_pose.pre_pose.position.z + 0.1
 		self.move_to(grasp_pose.pre_pose, 'arm')
 
 		#time.sleep(1)
-		# Check if the grasp pose z vaalue is above the hand depth to avoid htting the ground while trying to grasp 
+		# Check if the grasp pose z value is above the hand depth to avoid htting the ground while trying to grasp 
 		if grasp_pose.actual_pose.position.z <= 0.066:
 			grasp_pose.actual_pose.position.z = 0.06
 
+		# group = moveit_commander.MoveGroupCommander("arm")
+		# group.allow_replanning(True)
+		# group.set_num_planning_attempts(5)
+		# group.set_workspace([-3.0, -3.0, 3.0, 3.0])
+		# group.set_planning_time(10)
+
+		# waypoints = []
+		# pose_to_perform = group.get_current_pose().pose
+
+		# pose_to_perform.position = grasp_pose.actual_pose.position
+		# pose_to_perform.orientation = grasp_pose.actual_pose.orientation
+		# waypoints.append(copy.deepcopy(pose_to_perform))
+
+		# print(pose_to_perform)
+	
+		# (plan, fraction) = group.compute_cartesian_path(waypoints, 0.01, 0.0)         
+
+		# group.execute(plan)
+		# # Calling `stop()` ensures that there is no residual movement
+		# group.stop()
+		# # It is always good to clear your targets after planning with poses.
+		# # Note: there is no equivalent function for clear_joint_value_targets()
+		# group.clear_pose_targets()
 		self.move_to(grasp_pose.actual_pose, 'arm')
 
 		#move_hand(0)
