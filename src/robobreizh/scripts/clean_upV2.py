@@ -126,7 +126,7 @@ TRAY_A.hand = HAND_POSE_TRAY_A
 
 POSE_TABLE1 = [-0.1, 1.3, 90]
 POSE_TABLE2 = [1.1, 1.3, 90]
-POSE_GROUND1 = [1.1, 0.5, 90]
+POSE_GROUND1 = [1.1, 0.7, 90]
 POSE_GROUND2 = [1.1, 0.8, 90]
 START = [-0.1, 0.6, 90]
 
@@ -257,6 +257,26 @@ def compute_clostest_object(detected_obj):
 
 	return indice
 
+def compute_clostest_object2(detected_obj):
+	clostest_dist = 0.0
+	indice = 0
+	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+	print(trans)
+	for i in range(len(detected_obj)):
+		#Compute distance between the robot and the object
+		p = grasp_node.transform_frame(detected_obj[i], "map", "odom").pose
+		x = p.position.x - trans[0]
+		y = p.position.y - trans[1]
+
+		dist_actual = np.sqrt(np.square(x) + np.square(y))
+		print(dist_actual)
+
+		if dist_actual > clostest_dist:
+
+			indice = i
+
+	return indice
+
 def move_arm_table(height):
 	group_name = "arm"
 	group = moveit_commander.MoveGroupCommander(group_name)
@@ -309,13 +329,19 @@ def get_grasp_random():
 
 		objects = []
 		for grasp in detected_grasp:
+			# pose_temp = Pose()
+			# pose_temp.position.x = grasp.position.x
+			# pose_temp.position.y = grasp.position.y
+			# pose_temp.position.z = grasp.position.z
+
 			objects.append(grasp.actual_pose)
 
-		ind = compute_clostest_object(objects)
+		ind = compute_clostest_object2(objects)
 
 		best_grasp = GraspConfig()
 		best_grasp = detected_grasp[ind]
-
+	print("BEST GRASP: ")
+	print(best_grasp)
 	return best_grasp
 
 def go_to_place(place):
@@ -421,7 +447,7 @@ def main():
 
 	# For testing pupropse, go to the initial position
 	# repositionning()
-	spawn_obj()
+	#spawn_obj()
 	state = State.INIT
 	
 	while True:
@@ -436,7 +462,7 @@ def main():
 			state = State.LOOK
 
 		elif state == State.LOOK:
-			move_head_tilt(-0.8)
+			move_head_tilt(-1.0)
 
 			move_arm_init()
 
@@ -452,7 +478,7 @@ def main():
 				move_toward_object()
 
 				# Move hand to the desired height
-				if grasp.actual_pose.position.z >= 0.6:
+				if grasp.actual_pose.position.z >= 0.7:
 					move_arm_table(grasp.actual_pose.position.z)
 
 				if grasp_node.grasp_ground(grasp):
@@ -475,7 +501,7 @@ def main():
 				move_toward_object()
 
 				# Move hand to the desired height
-				if grasp.actual_pose.position.z >= 0.6:
+				if grasp.actual_pose.position.z >= 0.7:
 					move_arm_table(grasp.actual_pose.position.z)
 
 				if grasp_node.grasp_ground(grasp):
@@ -491,7 +517,7 @@ def main():
 
 				current_obj.set_deposit(depo)
 
-			state == State.DEPOSE
+			state = State.DEPOSE
 
 		elif state == State.DEPOSE:
 			go_to_place(current_obj.get_deposit().coord)
