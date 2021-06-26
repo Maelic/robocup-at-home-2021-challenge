@@ -32,6 +32,8 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import copy
+from drawer_opener import DrawerOpener
+
 
 #Deposits information
 class Deposit():
@@ -447,17 +449,17 @@ def main():
 
 	# For testing pupropse, go to the initial position
 	# repositionning()
-	spawn_obj()
+	#spawn_obj()
 	state = State.INIT
-	current_dep = BIN_B
 
 	while True:
 
 		if state == State.INIT:
 			move_arm_init()
 			move_hand(0)
-			open_drawers()
+			opener = DrawerOpener()
 
+			opener.open_drawers()
 
 			state = State.LOOK
 
