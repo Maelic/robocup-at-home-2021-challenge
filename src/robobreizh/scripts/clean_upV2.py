@@ -421,7 +421,7 @@ def main():
 
 	# For testing pupropse, go to the initial position
 	# repositionning()
-	#spawn_obj()
+	spawn_obj()
 	state = State.INIT
 	
 	while True:
@@ -465,7 +465,6 @@ def main():
 				move_arm_init()
 				current_obj.set_deposit("random")
 
-				state == State.DEPOSE
 			else:
 				current_obj.set_coordinate_name("current")
 
@@ -492,12 +491,12 @@ def main():
 
 				current_obj.set_deposit(depo)
 
-				state == State.DEPOSE
+			state == State.DEPOSE
 
 		elif state == State.DEPOSE:
-			go_to_place(depo.coord)
+			go_to_place(current_obj.get_deposit().coord)
 
-			place_obj(depo.hand)
+			place_obj(current_obj.get_deposit().hand)
 
 			move_hand(1)
 			
