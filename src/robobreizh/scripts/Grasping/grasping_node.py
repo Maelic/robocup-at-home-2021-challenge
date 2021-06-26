@@ -164,8 +164,8 @@ class Grasping():
 
 		#time.sleep(1)
 		# Check if the grasp pose z value is above the hand depth to avoid htting the ground while trying to grasp 
-		if grasp_pose.actual_pose.position.z <= 0.066:
-			grasp_pose.actual_pose.position.z = 0.06
+		# if grasp_pose.actual_pose.position.z <= 0.066:
+		# 	grasp_pose.actual_pose.position.z = 0.045
 
 		# group = moveit_commander.MoveGroupCommander("arm")
 		# group.allow_replanning(True)

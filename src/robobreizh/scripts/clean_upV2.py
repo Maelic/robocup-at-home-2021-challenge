@@ -126,7 +126,7 @@ TRAY_A.hand = HAND_POSE_TRAY_A
 
 POSE_TABLE1 = [-0.1, 1.3, 90]
 POSE_TABLE2 = [1.1, 1.3, 90]
-POSE_GROUND1 = [1.1, 0.7, 90]
+POSE_GROUND1 = [1.1, 0.6, 90]
 POSE_GROUND2 = [1.1, 0.8, 90]
 START = [-0.1, 0.6, 90]
 
@@ -449,7 +449,8 @@ def main():
 	# repositionning()
 	#spawn_obj()
 	state = State.INIT
-	
+	current_dep = BIN_B
+
 	while True:
 
 		if state == State.INIT:
@@ -489,7 +490,7 @@ def main():
 					print("Grasp failed!")
 
 				move_arm_init()
-				current_obj.set_deposit("random")
+				current_obj.set_deposit(BIN_A)
 
 			else:
 				current_obj.set_coordinate_name("current")
@@ -529,6 +530,7 @@ def main():
 			move_arm_init()
 			move_hand(0)
 
+			state = State.LOOK
 
 if __name__ == "__main__":
 	#Start state machine
