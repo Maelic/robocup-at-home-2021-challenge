@@ -342,6 +342,8 @@ def get_grasp_random():
 
 		best_grasp = GraspConfig()
 		best_grasp = detected_grasp[ind]
+	else:
+		return False
 	print("BEST GRASP: ")
 	print(best_grasp)
 	return best_grasp
@@ -459,12 +461,13 @@ def main():
 			move_hand(0)
 			opener = DrawerOpener()
 
-			opener.open_drawers()
+			#opener.open_drawers()
+
+			go_to_place(POSE_GROUND1)
 
 			state = State.LOOK
 
 		elif state == State.LOOK:
-			go_to_place(POSE_GROUND1)
 
 			move_head_tilt(-1.0)
 
@@ -477,53 +480,65 @@ def main():
 
 				grasp = get_grasp_random()
 
-				current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
-
-				move_toward_object()
-
-				# Move hand to the desired height
-				if grasp.actual_pose.position.z >= 0.7:
-					move_arm_table(grasp.actual_pose.position.z)
-
-				if grasp_node.grasp_ground(grasp):
-					rospy.sleep(0.5)
-					move_hand(0)
-					print("Grasp successful!")
+				if not grasp:
+					move_base_vel(0.2, 0.0, 0.0)
+					state = State.LOOK
 				else:
-					print("Grasp failed!")
+					current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
 
-				move_arm_init()
-				current_obj.set_deposit(BIN_A)
+					move_toward_object()
+
+					# Move hand to the desired height
+					if grasp.actual_pose.position.z >= 0.7:
+						move_arm_table(grasp.actual_pose.position.z)
+
+					if grasp_node.grasp_ground(grasp):
+						rospy.sleep(0.5)
+						move_hand(0)
+						print("Grasp successful!")
+					else:
+						print("Grasp failed!")
+
+					move_arm_init()
+					current_obj.set_deposit(BIN_A)
+
+					state = State.DEPOSE
 
 			else:
 				current_obj.set_coordinate_name("current")
 
 				grasp = get_grasp(bounding_box, cloud)
 
-				current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
-
-				move_toward_object()
-
-				# Move hand to the desired height
-				if grasp.actual_pose.position.z >= 0.7:
-					move_arm_table(grasp.actual_pose.position.z)
-
-				if grasp_node.grasp_ground(grasp):
-					rospy.sleep(0.5)
-					move_hand(0)
-					print("Grasp successful!")
+				if not grasp:
+					move_base_vel(0.1, 0.0, 0.0)
+					state = State.LOOK
 				else:
-					print("Grasp failed!")
+					current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
 
-				move_arm_init()
-				
-				depo = get_deposit(name)
+					move_toward_object()
 
-				current_obj.set_deposit(depo)
+					# Move hand to the desired height
+					if grasp.actual_pose.position.z >= 0.7:
+						move_arm_table(grasp.actual_pose.position.z)
 
-			state = State.DEPOSE
+					if grasp_node.grasp_ground(grasp):
+						rospy.sleep(0.5)
+						move_hand(0)
+						print("Grasp successful!")
+					else:
+						print("Grasp failed!")
+
+					move_arm_init()
+					
+					depo = get_deposit(name)
+
+					current_obj.set_deposit(depo)
+
+					state = State.DEPOSE
 
 		elif state == State.DEPOSE:
+			go_to_place(POSE_GROUND1)
+
 			go_to_place(current_obj.get_deposit().coord)
 
 			place_obj(current_obj.get_deposit().hand)
@@ -532,6 +547,8 @@ def main():
 			
 			move_arm_init()
 			move_hand(0)
+
+			go_to_place(POSE_GROUND1)
 
 			state = State.LOOK
 

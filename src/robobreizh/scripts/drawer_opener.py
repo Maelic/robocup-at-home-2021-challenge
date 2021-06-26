@@ -189,3 +189,4 @@ class DrawerOpener:
         self.open_top_right_drawer()
         # 3. Open bottom left drawer
         self.open_bottom_left_drawer()
+        move_hand(0)
