@@ -136,7 +136,6 @@ def move_base_goal(x, y, theta):
     return True if state == 3 else False
 
 
-
 def get_relative_coordinate(parent, child):
     u"""相対座標を取得する関数
 
@@ -331,7 +330,6 @@ def delete_object(name):
 
 
 class RGBD():
-    u"""RGB-Dデータを扱うクラス"""
 
     def __init__(self):
         self._br = tf.TransformBroadcaster()
@@ -347,6 +345,7 @@ class RGBD():
         self._h_max = 0
         self._xyz = [0, 0, 0]
         self._frame_name = None
+        self._deposit = ""
 
     def _cloud_cb(self, msg):
         # ポイントクラウドを取得する
@@ -405,6 +404,12 @@ class RGBD():
     def get_xyz(self):
         u"""抽出領域から計算されたxyzを取得する関数"""
         return self._xyz
+
+    def get_deposit():
+        return self._deposit
+        
+    def set_deposit(depo):
+        self._deposit = depo
 
     def set_xyz(self, xyz):
         self._xyz = xyz

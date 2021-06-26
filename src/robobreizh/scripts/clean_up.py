@@ -122,8 +122,6 @@ grasp_node = Grasping()
 listener = tf.TransformListener()
 yolo_object_browser = ObjectBrowserYolo('/workspace/src/robobreizh/scripts/obj_yolo.xml')
 
-State = "Table2"
-
 def get_deposit(category):
 	dic_depo = {'Food': TRAY_A, 'Kitchen': CONTAINER_A, 'Tool': BIN_A, 'Shape': BIN_B, 'Task': BIN_A, 'Discarded': BIN_B}
 
@@ -518,7 +516,7 @@ def return_init_state():
 	move_arm_init()
 
 def timer_thread(start):
-	end = start + 299
+	end = start + 899
 	while True:
 		current = rospy.get_time()
 		if current >= end:
@@ -526,16 +524,64 @@ def timer_thread(start):
 			rospy.signal_shutdown("Timeout reached")
 		rospy.sleep(1.)
 
+def compute_clostest_object(detected_obj):
+	clostest_dist = 0.0
+	indice = 0
+	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+	print(trans)
+	for i in range(len(detected_obj.object_posesXYZ)):
+		#Compute distance between the robot and the object
+		p = grasp_node.transform_frame(detected_obj.object_posesXYZ[i], "map", "head_rgbd_sensor_rgb_frame").pose
+		x = p.position.x - trans[0]
+		y = p.position.x - trans[1]
+
+		dist_actual = np.sqrt(np.square(x) + np.square(y))
+		print(dist_actual)
+
+		if dist_actual > clostest_dist:
+
+			indice = i
+
+	return indice
+
+def detect_object():
+	rospy.wait_for_service('/object_detection')
+	detect_service = rospy.ServiceProxy('/object_detection', object_detection)
+	msg = Int64(4)
+	resp = ""
+	start = time.time()
+	end = start + 2
+	try:
+		resp = detect_service(msg)
+	except rospy.ServiceException as exc:
+		print("Service did not process request: " + str(exc))
+
+	while(resp.detected_objects.object_names[0].data == "nothing"):
+		try:
+			resp = detect_service(msg)
+		except rospy.ServiceException as exc:
+			print("Service did not process request: " + str(exc))
+		if time.time() >= end:
+			return False
+
+	detected_obj = DetectedObj()
+	detected_obj = resp.detected_objects
+
+	ind = compute_clostest_object(detected_obj)
+	return detected_obj.objects_bb[ind], detected_obj.names[ind]
+
 def main():
 	rospy.init_node("Manager")
+	curent_obj = RGBD()
+
 	# For testing pupropse, go to the initial position
-	spawn_obj()
+	#spawn_obj()
 	start = rospy.get_time()
 	print(start)
 	t = threading.Thread(target=timer_thread, args=(start,))
 	t.start()
-	State = "Table2"
-	move_arm_init()
+
+	state = State.INIT
 	#move_distance(1)
 	#go_to_place(CONTAINER_A.coord)
 	#go_to_place(TRAY_A.coord)
@@ -549,9 +595,21 @@ def main():
 	
 	while True:
 
-		if State == "Table1":
+		if state == State.INIT:
 			move_arm_init()
 			go_to_place(START)
+			State = State.LOOK
+
+		elif state == State.LOOK:
+			move_head_tilt(-0.6)
+
+			move_arm_init()
+			pose, name = detect_object()
+			curent_obj.set_coordinate_name(name)
+			curent_obj.set_xyz(pose)
+
+
+
 			move_object_on_the_way(1.1)
 			rospy.sleep(1.)
 			#Step 1: Clean up Objects Table 1

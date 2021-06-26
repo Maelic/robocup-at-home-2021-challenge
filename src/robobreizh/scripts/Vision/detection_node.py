@@ -121,20 +121,19 @@ class ObjectsDetection():
 		threshold = 40.0
 		
 		for obj in detections:
-			if not (obj[0] == "019_pitcher_base"): #Remove the pitcher because it's impossible to grasp (too big)
-				if (float(obj[1]) > threshold): #Check if the confidence is above a threshold
-					labels.append(String(obj[0]))
-					x, y, w, h = obj[2][0], obj[2][1], obj[2][2], obj[2][3]
+			if (float(obj[1]) > threshold): #Check if the confidence is above a threshold
+				labels.append(String(obj[0]))
+				x, y, w, h = obj[2][0], obj[2][1], obj[2][2], obj[2][3]
 
-					boundingbox = BoundingBoxCoord()
-					x_min, y_min, x_max, y_max = self.convertBack(x,y,w,h)
-					boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in self.convertBack(x,y,w,h))
+				boundingbox = BoundingBoxCoord()
+				x_min, y_min, x_max, y_max = self.convertBack(x,y,w,h)
+				boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in self.convertBack(x,y,w,h))
 
-					bounding_boxes.append(boundingbox)
+				bounding_boxes.append(boundingbox)
 
-					points.append([int(x), int(y)])
-					#pc = self.crop_object_pointcloud(x_min, y_min, x_max, y_max, [x,y], pointcloud_sub)
-					#point_clouds.append(pc)
+				points.append([int(x), int(y)])
+				#pc = self.crop_object_pointcloud(x_min, y_min, x_max, y_max, [x,y], pointcloud_sub)
+				#point_clouds.append(pc)
 
 		if not labels:
 			final_msg = DetectedObj()
@@ -142,7 +141,7 @@ class ObjectsDetection():
 			return final_msg
 		
 		poses = self.estimate_pose(points, pointcloud_sub)
-
+		print(points)
 		obj_poseXYZ = []
 		for pos in poses:
 			temp = Pose()
@@ -167,12 +166,16 @@ class ObjectsDetection():
 		final_msg.object_poses = poses_msg
 		final_msg.cloud = pointcloud_sub
 		final_msg.object_posesXYZ = obj_poseXYZ
-
+		print(obj_poseXYZ)
 		return final_msg
 
 
 	def estimate_pose(self, points, pointcloud_sub):
-		return list(pc2.read_points(pointcloud_sub, field_names=("x", "y", "z"), skip_nans=True, uvs=points))
+		res = []
+		gen = pc2.read_points(pointcloud_sub, field_names=("x", "y", "z"), skip_nans=True, uvs=points)
+		for p in gen:
+			res.append(p)
+		return res
 
 
 	########################################################

@@ -47,7 +47,6 @@ class Tidy_object():
 yellow = [[22, 93, 0], [45, 255, 255]]
 red = [[0,50,50], [10,255,255]]
 additional_objects = {'apple': red, 'lemon':yellow}
-rgbd = RGBD()
 
 def find_HSV(obj):
 	bridge = CvBridge()
@@ -288,8 +287,6 @@ def move_head_right():
 
 def go_left():
 	go_to_place([])
-
-start2 = True
 
 def go_shortcut():
 	move_base_vel_rad(0.5,0.0,0.8)
