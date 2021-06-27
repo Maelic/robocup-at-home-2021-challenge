@@ -138,7 +138,8 @@ class State():
 	LOOK = 1
 	GRASP = 2
 	DEPOSE = 3
-	END = 4
+	GRASP = 4
+	END = 5
 
 
 rospy.init_node("Stage2")
@@ -382,29 +383,90 @@ def move_angle(angle_r):
 	vel_msg.angular.z = 0
 	base_vel_pub.publish(vel_msg)
 
-
-
-def move_toward_object():
+def move_toward_object2():
 	(trans,rot) = listener.lookupTransform('/base_link', '/current', rospy.Time(0))
-	
 
 	dist = np.linalg.norm(trans)
+	(trans,rot) = listener.lookupTransform('/map', '/current', rospy.Time(0))
+	(trans2,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
 
-	(trans,rot) = listener.lookupTransform('/odom', '/current', rospy.Time(0))
+
+def transform_frame(pose, frame_dest, frame_source):
+	tf2_buffer = tf2_ros.Buffer(rospy.Duration(1200.0)) #tf buffer length
+	tf2_listener = tf2_ros.TransformListener(tf2_buffer)
+
+	transform = tf2_buffer.lookup_transform(frame_dest,
+								   frame_source, #source frame
+								   rospy.Time(0), #get the tf at first available time
+								   rospy.Duration(2.0)) #wait for 1 second
+
+	pose_stamped_to_transform = PoseStamped()
+	pose_stamped_to_transform.pose.position = pose.position
+	pose_stamped_to_transform.pose.orientation = pose.orientation
+
+	return(tf2_geometry_msgs.do_transform_pose(pose_stamped_to_transform, transform).pose)
+		
+
+def move_toward_object(grasp):
+	(trans,rot) = listener.lookupTransform('/base_link', '/current', rospy.Time(0))
+
+	dist = np.linalg.norm(trans)
+	transformed_pose = transform_frame(grasp.actual_pose, "map", "odom")
+
+	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
+
+	X = (trans[0] + transformed_pose.position.x) / 2
+	Y = (trans[1] + transformed_pose.position.y) / 2
+
 	theta = tf.transformations.euler_from_quaternion(rot)
 	print("DIST: {}".format(dist))
 	print("ANGLE: {}".format(theta))
 
-	if dist <= 0.4:
-		return 0
+	(trans,rot) = listener.lookupTransform('/odom', '/current', rospy.Time(0))
 	(trans2,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
-	print(trans2)
 
-	move_angle(theta[2])
+	current_ang_rad = whole_body.get_current_joint_values()[2]
+	print(current_ang_rad)
+	angle_diff_rad = current_ang_rad + theta[2]
+	angle_diff_deg = math.degrees(angle_diff_rad)
 
-	d_to_obj = dist - 0.4
-	move_distance(d_to_obj)
+	# d = 0.4 / dist
+	# X = trans2[0] + d * (trans[0] - trans2[0])
+	# Y = trans2[1] + d * (trans[1] - trans2[1])
 
+
+
+	print("COORD: {}".format([X,Y,angle_diff_deg]))
+
+	if dist <= 0.5:
+		X = trans[0]
+		Y = trans[1]
+		return 0
+
+	move_base_goal(X, Y, angle_diff_deg)
+
+def move_toward_object2(grasp):
+	(trans,rot) = listener.lookupTransform('/base_link', '/current', rospy.Time(0))
+
+	dist = np.linalg.norm(trans)
+
+
+	x1 = grasp.actual_pose.position.x
+	y1 = grasp.actual_pose.position.y
+	p = whole_body.get_current_pose().pose
+	x2 = p.position.x
+	y2 = p.position.y
+
+	theta = np.arctan2(y2 - y1, x2 - x1) * 180 / math.pi
+	print("THETA: {}".format(theta))
+	print("DIST: {}".format(dist))
+
+	move_ang(theta)
+
+	if dist <= 0.5:
+		return 0
+
+	move_distance(dist-0.4)
 
 def calc_dist(pose1, pose2):
 	x = pose1[0] - pose2[0]
@@ -442,15 +504,46 @@ def get_grasp(detected_obj, cloud):
 	best_grasp = detected_grasp[0]
 	return best_grasp
 
-def open_drawers():
-	pass
+def repositioning():
+	move_hand(0)
+	move_head_tilt(0)
+	move_arm_init()
+	move_base_goal(0.0,0.0,0)
 
+def replace_robot_angular(req_angle):
+	# TODO: Only works with negative values, but sufficient for RoboCup
+	current_ang_rad = whole_body.get_current_joint_values()[2]
+	print(current_ang_rad)
+	angle_diff_rad = current_ang_rad - req_angle
+	angle_diff_deg = math.degrees(angle_diff_rad)
+	print(angle_diff_deg)
+	move_ang(angle_diff_deg)
+	
+def move_ang(angle):
+	speed_compute = 5
+	start = time.time()
+	end = start + (abs(angle) / speed_compute)
+	print (end-start)
+	
+	if abs(angle) <= 5:
+		return 0
+	
+	if angle <= 0:
+		speed = speed_compute
+	else:
+		speed = -speed_compute
+	
+	print(speed)
+		
+	while time.time() < end:
+		move_base_vel(0.0, 0.0, speed)
+		
 def main():
 	current_obj = RGBD()
 	signal.signal(signal.SIGINT, signal_handler)
 
 	# For testing pupropse, go to the initial position
-	# repositionning()
+	#repositioning()
 	#spawn_obj()
 	state = State.INIT
 
@@ -481,28 +574,17 @@ def main():
 				grasp = get_grasp_random()
 
 				if not grasp:
-					move_base_vel(0.2, 0.0, 0.0)
+					move_base_vel(0.1, 0.0, 0.0)
 					state = State.LOOK
 				else:
 					current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
 
-					move_toward_object()
+					move_toward_object2(grasp)
 
-					# Move hand to the desired height
-					if grasp.actual_pose.position.z >= 0.7:
-						move_arm_table(grasp.actual_pose.position.z)
-
-					if grasp_node.grasp_ground(grasp):
-						rospy.sleep(0.5)
-						move_hand(0)
-						print("Grasp successful!")
-					else:
-						print("Grasp failed!")
-
-					move_arm_init()
+					current_obj.set_grasp(grasp)
 					current_obj.set_deposit(BIN_A)
 
-					state = State.DEPOSE
+					state = State.GRASP
 
 			else:
 				current_obj.set_coordinate_name("current")
@@ -515,26 +597,36 @@ def main():
 				else:
 					current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
 
-					move_toward_object()
-
-					# Move hand to the desired height
-					if grasp.actual_pose.position.z >= 0.7:
-						move_arm_table(grasp.actual_pose.position.z)
-
-					if grasp_node.grasp_ground(grasp):
-						rospy.sleep(0.5)
-						move_hand(0)
-						print("Grasp successful!")
-					else:
-						print("Grasp failed!")
-
-					move_arm_init()
-					
+					move_toward_object2(grasp)
 					depo = get_deposit(name)
-
 					current_obj.set_deposit(depo)
+					current_obj.set_grasp(grasp)
 
-					state = State.DEPOSE
+					state = State.GRASP
+
+		elif state == State.GRASP:
+
+			current_grasp = current_obj.get_grasp()
+
+			# Potential collision with the table, aborting
+			if current_grasp.actual_pose.position.y >= 1.1:
+				move_base_vel_rad(0.0, 0.0, 0.3)
+				state = State.LOOK
+
+			# Move hand to the desired height
+			if current_grasp.actual_pose.position.z >= 0.7:
+				move_arm_table(current_grasp.actual_pose.position.z)
+
+			if grasp_node.grasp_ground(current_grasp):
+				rospy.sleep(0.5)
+				move_hand(0)
+				print("Grasp successful!")
+			else:
+				print("Grasp failed!")
+
+			move_arm_init()
+
+			state = State.DEPOSE
 
 		elif state == State.DEPOSE:
 			go_to_place(POSE_GROUND1)

@@ -346,6 +346,7 @@ class RGBD():
         self._xyz = [0, 0, 0]
         self._frame_name = None
         self._deposit = ""
+        self._grasp = ""
 
     def _cloud_cb(self, msg):
         # ポイントクラウドを取得する
@@ -410,6 +411,12 @@ class RGBD():
 
     def set_deposit(self, depo):
         self._deposit = depo
+
+    def get_grasp(self):
+        return self._grasp
+
+    def set_grasp(self, grasp):
+        self._grasp = grasp
 
     def set_xyz(self, xyz):
         self._xyz = xyz

@@ -8,7 +8,7 @@ class DrawerOpener:
         print('Drawer Opener')
 
     def moveto_right_drawers(self):
-        move_base_goal(0.05,0.50, -90)
+        move_base_goal(0.0,0.50, -90)
 
     def moveto_left_drawers(self):
         move_base_goal(0.40,0.50, -90)
@@ -54,33 +54,29 @@ class DrawerOpener:
             move_base_vel(speed, 0.0, angle)
         
     def approach_drawer(self):
-        #self.replace_robot_angular(-1.57)
-        #rospy.sleep(.5)
-        self.move_distance(0.10,0)
+        self.replace_robot_angular(-1.57)
         rospy.sleep(.5)
-        #self.replace_robot_angular(-1.57)
-        #rospy.sleep(.5)
-        self.move_distance(0.10,0)
+        self.move_distance(0.12,0)
         rospy.sleep(.5)
-        #self.replace_robot_angular(-1.57)
-        #rospy.sleep(.5)
+
+        self.replace_robot_angular(-1.57)
+        rospy.sleep(.5)
+
 
     def approach_drawer_top(self):
-        #self.replace_robot_angular(-1.57)
-        #rospy.sleep(.5)
-        self.move_distance(0.10,0)
+        self.replace_robot_angular(-1.57)
         rospy.sleep(.5)
-        #self.replace_robot_angular(-1.57)
-        #rospy.sleep(.5)
-        self.move_distance(0.15,0)
+
+        self.move_distance(0.2,0)
+
         rospy.sleep(.5)
-        #self.replace_robot_angular(-1.57)
-        #rospy.sleep(.5)
+        self.replace_robot_angular(-1.57)
+        rospy.sleep(.5)
     
     def pull_drawer(self):
         speed = -5
         start = time.time()
-        dist = 8
+        dist = 6
         end = start + (dist / -speed)
         while time.time() < end:
             move_base_vel(speed, 0.0, 0.0)
@@ -100,7 +96,6 @@ class DrawerOpener:
         print (end-start)
         
         if abs(angle) <= 5:
-            print('no need')
             return 0
         
         if angle <= 0:
