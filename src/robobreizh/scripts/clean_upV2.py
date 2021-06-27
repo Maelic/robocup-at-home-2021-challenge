@@ -33,7 +33,7 @@ from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import copy
 from drawer_opener import DrawerOpener
-
+import random
 
 #Deposits information
 class Deposit():
@@ -255,6 +255,7 @@ def compute_clostest_object(detected_obj):
 		print(dist_actual)
 
 		if dist_actual > clostest_dist:
+			clostest_dist = dist_actual
 
 			indice = i
 
@@ -263,6 +264,7 @@ def compute_clostest_object(detected_obj):
 def compute_clostest_object2(detected_obj):
 	clostest_dist = 0.0
 	indice = 0
+	too_far = True
 	(trans,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
 	print(trans)
 	for i in range(len(detected_obj)):
@@ -275,9 +277,8 @@ def compute_clostest_object2(detected_obj):
 		print(dist_actual)
 
 		if dist_actual > clostest_dist:
-
+			clostest_dist = dist_actual
 			indice = i
-
 	return indice
 
 def move_arm_vision():
@@ -325,7 +326,7 @@ def move_arm_table(height):
 	group.clear_pose_targets()
 
 def get_grasp_random():
-	zone = [0, 100, 640, 480]
+	zone = [220, 200, 420, 380]
 	boundingbox = BoundingBoxCoord()
 	boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in zone)
 
@@ -402,14 +403,6 @@ def move_angle(angle_r):
 
 	vel_msg.angular.z = 0
 	base_vel_pub.publish(vel_msg)
-
-def move_toward_object2():
-	(trans,rot) = listener.lookupTransform('/base_link', '/current', rospy.Time(0))
-
-	dist = np.linalg.norm(trans)
-	(trans,rot) = listener.lookupTransform('/map', '/current', rospy.Time(0))
-	(trans2,rot) = listener.lookupTransform('/map', '/base_link', rospy.Time(0))
-
 
 def transform_frame(pose, frame_dest, frame_source):
 	tf2_buffer = tf2_ros.Buffer(rospy.Duration(1200.0)) #tf buffer length
@@ -492,15 +485,15 @@ def move_toward_object2(grasp):
 
 	#angle_diff_deg = math.degrees(angle_diff_rad)
 
-	print("THETA: {}".format(theta))
-	# theta = theta - 5
-	if theta >= 180:
-		theta = theta - 360
-	move_ang(-theta)
+	# print("THETA: {}".format(theta))
+	# # theta = theta - 5
+	# if theta >= 180:
+	# 	theta = theta - 360
+	#move_ang(-theta)
 
 	rospy.sleep(.5)
-	if dist2 >= 0.3:
-		move_distance(dist2-0.3)
+	if dist2 >= 0.4:
+		move_distance(dist2-0.4)
 	rospy.sleep(.5)
 
 
@@ -584,6 +577,7 @@ def main():
 	#spawn_obj()
 	state = State.INIT
 	count_object = 0
+	turn = 0
 	while True:
 		if count_object == 5:
 			global POSE_GROUND1 
@@ -604,6 +598,10 @@ def main():
 		elif state == State.LOOK:
 
 			move_head_tilt(-1.0)
+			if turn == 1:
+				move_base_vel(0.0,0.0,0.3)
+			elif turn == 2: 
+				move_base_vel(0.0,0.0,-0.3)
 
 			move_arm_init()
 			move_arm_vision()
@@ -716,6 +714,12 @@ def main():
 			count_object = count_object + 1
 
 			state = State.LOOK
+			if turn == 0:
+				turn = 1
+			elif turn == 1:
+				turn = 2
+			elif turn == 2:
+				turn = 0
 
 if __name__ == "__main__":
 	#Start state machine

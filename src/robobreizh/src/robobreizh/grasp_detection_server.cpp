@@ -275,7 +275,7 @@ bool GraspDetectionServer::detectGrasps(robobreizh::detect_grasps::Request& req,
   }
 
   PointCloudRGBA::Ptr temp_cloud (new PointCloudRGBA);
-  GraspDetectionServer::PointCloudXYZRGBtoXYZRGBA(*cloud_filtered, *temp_cloud);
+  GraspDetectionServer::PointCloudXYZRGBtoXYZRGBA(*cloud_out, *temp_cloud);
 
   frame_ = req.request.global_cloud.header.frame_id;
 
