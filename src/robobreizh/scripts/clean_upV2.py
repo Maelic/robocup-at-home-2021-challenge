@@ -126,7 +126,7 @@ TRAY_A = Deposit()
 TRAY_A.coord = [1.6,  0.0, -90]
 TRAY_A.hand = HAND_POSE_TRAY_A
 
-POSE_TABLE1 = [-0.1, 1.3, 90]
+POSE_TABLE1 = [-0.1, 0.8, 90]
 POSE_TABLE2 = [1.1, 1.3, 90]
 POSE_GROUND1 = [1.0, 0.6, 90]
 POSE_GROUND2 = [1.0, 0.8, 0.0]
@@ -279,6 +279,26 @@ def compute_clostest_object2(detected_obj):
 			indice = i
 
 	return indice
+
+def move_arm_vision():
+	group_name = "arm"
+	move_group = moveit_commander.MoveGroupCommander(group_name)
+	move_group.allow_replanning(True)
+	#move_group.set_workspace([-2.0, -2.0, 2.0, 2.0])
+	joint_goal = move_group.get_current_joint_values()
+
+	joints_index = {'arm_lift_joint':0, 'arm_flex_joint':1, 'arm_roll_joint':2, 'wrist_flex_joint':3, 'wrist_roll_joint':4, 'wrist_ft_sensor_frame_joint':5, 'wrist_ft_sensor_frame_inverse_joint':6, 'hand_palm_joint':7,}
+
+	joint_goal[0] = 0.5
+	#joint_goal[2] = 1.4
+	#joint_goal[1] = -0.1
+
+	try:
+		move_group.go(joint_goal, wait=True)
+	except moveit_commander.MoveItCommanderException as exc:
+		print("")
+	move_group.stop()
+	move_hand(0)
 
 def move_arm_table(height):
 	group_name = "arm"
@@ -473,11 +493,14 @@ def move_toward_object2(grasp):
 	#angle_diff_deg = math.degrees(angle_diff_rad)
 
 	print("THETA: {}".format(theta))
+	# theta = theta - 5
+	if theta >= 180:
+		theta = theta - 360
+	move_ang(-theta)
 
 	rospy.sleep(.5)
-	if dist2 >= 0.25:
-		move_distance(dist2-0.25)
-	move_ang(theta)
+	if dist2 >= 0.3:
+		move_distance(dist2-0.3)
 	rospy.sleep(.5)
 
 
@@ -534,7 +557,7 @@ def replace_robot_angular(req_angle):
 	move_ang(angle_diff_deg)
 	
 def move_ang(angle):
-	speed_compute = 5
+	speed_compute = 10
 	start = time.time()
 	end = start + (abs(angle) / speed_compute)
 	print (end-start)
@@ -560,15 +583,19 @@ def main():
 	#repositioning()
 	#spawn_obj()
 	state = State.INIT
-
+	count_object = 0
 	while True:
+		if count_object == 5:
+			global POSE_GROUND1 
+			POSE_GROUND1 = POSE_TABLE1
+			go_to_place(POSE_GROUND1)
 
 		if state == State.INIT:
 			move_arm_init()
 			move_hand(0)
 			opener = DrawerOpener()
 
-			opener.open_drawers()
+			#opener.open_drawers()
 
 			go_to_place(POSE_GROUND1)
 
@@ -579,7 +606,7 @@ def main():
 			move_head_tilt(-1.0)
 
 			move_arm_init()
-
+			move_arm_vision()
 			bounding_box, name, cloud = detect_object()
 			
 			if not name:
@@ -591,14 +618,18 @@ def main():
 					move_base_vel(0.1, 0.0, 0.0)
 					state = State.LOOK
 				else:
-					current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
+					if grasp.actual_pose.position.y >= 1.4:
+						count_object = count_object + 1
+						state = State.LOOK
+					else:
+						current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
 
-					move_toward_object2(grasp)
+						move_toward_object2(grasp)
 
-					current_obj.set_grasp(grasp)
-					current_obj.set_deposit(BIN_A)
+						current_obj.set_grasp(grasp)
+						current_obj.set_deposit(BIN_A)
 
-					state = State.GRASP
+						state = State.GRASP
 
 			else:
 				current_obj.set_coordinate_name("current")
@@ -609,14 +640,40 @@ def main():
 					move_base_vel(0.1, 0.0, 0.0)
 					state = State.LOOK
 				else:
-					current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
+					if grasp.actual_pose.position.y >= 1.4:
+						count_object = count_object + 1
+						current_obj.set_coordinate_name("current")
 
-					move_toward_object2(grasp)
-					depo = get_deposit(name)
-					current_obj.set_deposit(depo)
-					current_obj.set_grasp(grasp)
+						grasp = get_grasp_random()
 
-					state = State.GRASP
+						if not grasp:
+							move_base_vel(0.1, 0.0, 0.0)
+							state = State.LOOK
+						else:
+							if grasp.actual_pose.position.y >= 1.5:
+								count_object = count_object + 1
+								state = State.LOOK
+							else:
+								current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
+
+								move_toward_object2(grasp)
+
+								current_obj.set_grasp(grasp)
+								current_obj.set_deposit(BIN_A)
+
+								state = State.GRASP
+
+						state = State.LOOK
+					else:
+						current_obj.set_xyz([grasp.position.x, grasp.position.y, grasp.position.z])
+
+						move_toward_object2(grasp)
+
+						depo = get_deposit(name)
+						current_obj.set_deposit(depo)
+						current_obj.set_grasp(grasp)
+
+						state = State.GRASP
 
 		elif state == State.GRASP:
 
@@ -655,6 +712,8 @@ def main():
 			move_hand(0)
 
 			go_to_place(POSE_GROUND1)
+			
+			count_object = count_object + 1
 
 			state = State.LOOK
 

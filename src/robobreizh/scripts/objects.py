@@ -6,7 +6,7 @@ def spawn_obj():
         objects_list = objects_list_file.read().split("\n")
         objects_list = [i[8:] for i in objects_list]
 
-    number = [6, 5, 11]
+    number = [8, 5, 14]
 
     objects_to_place = [random.sample(objects_list, i) for i in number]
     zones = [
