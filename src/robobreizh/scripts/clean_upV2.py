@@ -129,7 +129,7 @@ TRAY_A.hand = HAND_POSE_TRAY_A
 POSE_TABLE1 = [-0.1, 1.3, 90]
 POSE_TABLE2 = [1.1, 1.3, 90]
 POSE_GROUND1 = [1.0, 0.6, 90]
-POSE_GROUND2 = [1.0, 0.8, 90]
+POSE_GROUND2 = [1.0, 0.8, 0.0]
 START = [-0.1, 0.6, 90]
 
 #State class
@@ -445,28 +445,42 @@ def move_toward_object(grasp):
 
 	move_base_goal(X, Y, angle_diff_deg)
 
+def angle_between(p1, p2):
+    ang1 = np.arctan2(*p1[::-1])
+    ang2 = np.arctan2(*p2[::-1])
+    return np.rad2deg((ang1 - ang2) % (2 * np.pi))
+
+
 def move_toward_object2(grasp):
 	(trans,rot) = listener.lookupTransform('/base_link', '/current', rospy.Time(0))
-
-	dist = np.linalg.norm(trans)
-
 
 	x1 = grasp.actual_pose.position.x
 	y1 = grasp.actual_pose.position.y
 	p = whole_body.get_current_pose().pose
 	x2 = p.position.x
 	y2 = p.position.y
+	p2 = [x1, y1]
+	p1 = [x2, y2]
 
-	theta = np.arctan2(y2 - y1, x2 - x1) * 180 / math.pi
+	theta = angle_between(p2, p1)
+
+	current_ang_rad = euler_from_quaternion([p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w])[2]
+	#current_ang_rad = whole_body.get_current_joint_values()[2]
+	dist2 = np.sqrt(((x1 - x2)**2 + (y1 - y2)**2))
+	print("dist2 :{}".format(dist2))
+	print("current angle rad {}".format(current_ang_rad))
+
+	#angle_diff_deg = math.degrees(angle_diff_rad)
+
 	print("THETA: {}".format(theta))
-	print("DIST: {}".format(dist))
 
+	rospy.sleep(.5)
+	if dist2 >= 0.25:
+		move_distance(dist2-0.25)
 	move_ang(theta)
+	rospy.sleep(.5)
 
-	if dist <= 0.5:
-		return 0
 
-	move_distance(dist-0.4)
 
 def calc_dist(pose1, pose2):
 	x = pose1[0] - pose2[0]
@@ -554,7 +568,7 @@ def main():
 			move_hand(0)
 			opener = DrawerOpener()
 
-			#opener.open_drawers()
+			opener.open_drawers()
 
 			go_to_place(POSE_GROUND1)
 
@@ -629,7 +643,7 @@ def main():
 			state = State.DEPOSE
 
 		elif state == State.DEPOSE:
-			go_to_place(POSE_GROUND1)
+			go_to_place(POSE_GROUND2)
 
 			go_to_place(current_obj.get_deposit().coord)
 

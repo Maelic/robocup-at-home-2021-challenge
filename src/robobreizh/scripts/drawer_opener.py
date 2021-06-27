@@ -8,10 +8,10 @@ class DrawerOpener:
         print('Drawer Opener')
 
     def moveto_right_drawers(self):
-        move_base_goal(0.0,0.50, -90)
+        move_base_goal(0.025,0.50, -90)
 
     def moveto_left_drawers(self):
-        move_base_goal(0.40,0.50, -90)
+        move_base_goal(0.42,0.50, -90)
 
     def move_arm(self, joints_pose):
         group_name = "arm"
@@ -37,12 +37,18 @@ class DrawerOpener:
         self.move_arm(joint_values_lower_pos)
     
     def move_arm_drawer_top(self):
-        joints_pose_top = [0.2768508471131582,
-        -1.7628517972586382,
-        0.16632037112523212,
-        0.09242120022747358,
-        1.57,
-        0.0]
+        #joints_pose_top = [0.2768508471131582,
+        #-1.7628517972586382,
+        #0.16632037112523212,
+        #0.09242120022747358,
+        #1.57,
+        #0.0]
+        joints_pose_top = [0.26615237179847206,
+         -1.8003336626092343,
+         0.1132271867695871,
+         0.11052952175318076,
+         1.57,
+         0.0]
         self.move_arm(joints_pose_top)
 
     def move_distance(self, dist, angle):
@@ -56,22 +62,38 @@ class DrawerOpener:
     def approach_drawer(self):
         self.replace_robot_angular(-1.57)
         rospy.sleep(.5)
-        self.move_distance(0.12,0)
+        self.move_distance(0.18,0)
         rospy.sleep(.5)
 
+        self.replace_robot_angular(-1.57)
+        rospy.sleep(.5)
+        
+    def approach_drawer_bottom_left(self):
+        self.replace_robot_angular(-1.57)
+        rospy.sleep(.5)
+        self.move_distance(0.18,0)
+        rospy.sleep(.5)
+     
+        
+        self.move_distance(0.10,0)
+        rospy.sleep(.5)
         self.replace_robot_angular(-1.57)
         rospy.sleep(.5)
 
 
     def approach_drawer_top(self):
         self.replace_robot_angular(-1.57)
-        rospy.sleep(.5)
-
-        self.move_distance(0.2,0)
-
-        rospy.sleep(.5)
+        rospy.sleep(2)
+        
+        self.move_distance(0.15,0)
+        rospy.sleep(2)
         self.replace_robot_angular(-1.57)
-        rospy.sleep(.5)
+        rospy.sleep(2)
+        
+        self.move_distance(0.10,0)
+        rospy.sleep(2)
+        self.replace_robot_angular(-1.57)
+        rospy.sleep(2)
     
     def pull_drawer(self):
         speed = -5
@@ -115,6 +137,10 @@ class DrawerOpener:
         print(current_ang_rad)
         angle_diff_rad = current_ang_rad - req_angle
         angle_diff_deg = math.degrees(angle_diff_rad)
+        
+        if angle_diff_deg >= 180:
+            angle_diff_deg -= 360
+            
         print(angle_diff_deg)
         self.move_ang(angle_diff_deg)
     
