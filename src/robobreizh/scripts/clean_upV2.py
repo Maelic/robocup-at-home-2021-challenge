@@ -326,7 +326,7 @@ def move_arm_table(height):
 	group.clear_pose_targets()
 
 def get_grasp_random():
-	zone = [220, 200, 420, 380]
+	zone = [220, 220, 420, 460]
 	boundingbox = BoundingBoxCoord()
 	boundingbox.x_min, boundingbox.y_min, boundingbox.x_max, boundingbox.y_max = (Int64(x) for x in zone)
 
@@ -451,7 +451,7 @@ def move_toward_object(grasp):
 
 	print("COORD: {}".format([X,Y,angle_diff_deg]))
 
-	if dist <= 0.5:
+	if dist <= 0.4:
 		X = trans[0]
 		Y = trans[1]
 		return 0
@@ -599,9 +599,9 @@ def main():
 
 			move_head_tilt(-1.0)
 			if turn == 1:
-				move_base_vel(0.0,0.0,0.3)
+				move_base_vel(0.0,0.0,0.4)
 			elif turn == 2: 
-				move_base_vel(0.0,0.0,-0.3)
+				move_base_vel(0.0,0.0,-0.4)
 
 			move_arm_init()
 			move_arm_vision()
